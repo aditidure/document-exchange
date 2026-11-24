@@ -509,25 +509,8 @@ def decode(y, (1, hx, px, r, a), n):
 \label{fig:thm2}
 \end{figure*}
 
-\begin{table}[!t]
-\caption{Theorem~\ref{thm:2}: verification checks}\label{tab:checks}
-\centering\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lccc@{}}
-\toprule
-Check & $t{=}1,k{=}1$ & $t{=}2,k{=}1$ & $t{=}1,k{=}2$\\
-\midrule
-C1 every tag decodes & pass & pass & pass\\
-C2 $(r,a)\le(4t-2)\log n$ & pass (3 b) & pass & pass\\
-C3 $|h|-\log n$ constant & pass (31) & pass & pass (36)\\
-C4 slope $\le 4t-1$ & $2.30\le3$ & $2.63\le7$ & $2.30\le3$\\
-C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \begin{itemize}
-\item \emph{Theorem~\ref{thm:2}} (Fig.~\ref{fig:thm2}, Table~\ref{tab:checks}): all 1{,}630 decodes succeeded; the slopes are within $4t-1$ and the remainder falls relative to $\log n$.
+\item \emph{Theorem~\ref{thm:2}} (Fig.~\ref{fig:thm2}): all 1{,}630 decodes succeeded. (a) The fitted slopes are $2.30$, $2.63$ and $2.30$ for $(t,k)=(1,1),(2,1),(1,2)$, within $4t-1=3,7,3$. (b) The remainder per $\log n$ falls from $15.2$ to $7.2$, $16.3$ to $9.1$ and $17.8$ to $9.9$ over the tested range of $n$.
 \item \emph{Bit budget}: at $n=256$ the tag is $1\,(\text{flag})+39\,(h)+39\,(\psi)+3\,(r,a)=82$ bits, against 25 bits for Theorem~\ref{thm:1}. From the measured part sizes, the average-case scheme becomes shorter only near $n\approx2^{108}$.
 \end{itemize}
 
@@ -720,7 +703,7 @@ Seeds are fixed, so reruns reproduce the reported numbers.\par}
 7 & Hash $h$ and localisation (\path{schemes/average_case/hash_h.py}) & Edit always inside the located window\\
 8 & Side information $\psi$ and the one-edit decoder (\path{schemes/average_case/psi.py}) & One edit recovered at $n=2^{13}$; never a wrong output\\
 9 & Average-case scheme: restricted ball, encoder, decoder (\path{schemes/average_case/scheme.py}) & Both branches decode; survivors $\subseteq\Ct(\bx)$\\
-10 & Verification of Theorem~\ref{thm:2}, figures (\path{experiments/verify_average_case.py}) & Checks C1--C5 pass (Table~\ref{tab:checks})\\
+10 & Verification of Theorem~\ref{thm:2}, figures (\path{experiments/verify_average_case.py}) & Slope $\le4t-1$; remainder$/\log n$ falls\\
 11 & Higher-complexity scheme of~\cite{li21}: two-round distributed colouring (\path{schemes/li21.py}) & Proper colouring on all $2^8$ strings; round trips\\
 12 & Binary documents, one block per line, edit-model check (\path{io/documents.py}, \path{documents/}) & Hand-worked edit counts; block classification\\
 13 & Comparison of the three schemes on synthetic blocks, figures (\path{experiments/compare.py}) & 675/675 decoded; slopes in Fig.~\ref{fig:cost}\\
