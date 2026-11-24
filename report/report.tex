@@ -401,7 +401,7 @@ This section covers the second part of the project: we implement the worst-case 
 \end{enumerate}
 
 \textbf{Important code} (\path{schemes/worst_case.py}):
-\par\noindent\begin{minipage}{\columnwidth}\scriptsize
+\par\medskip\noindent\hspace*{1em}\begin{minipage}{\dimexpr\columnwidth-1em}\scriptsize
 \begin{verbatim}
 def encode(x):
     C = confusion_ball(x, k, t)    # B_2t(x) & {0,1}^n
@@ -411,9 +411,9 @@ def encode(x):
 def decode(y, (r, a), n):
     S = suspects(y, n, k, t)       # B_t(y) & {0,1}^n
     hits = [z for z in S if f(z) % a == r]
-    return hits[0]                 # exactly one, else error
+    return hits[0]           # exactly one, else error
 \end{verbatim}
-\end{minipage}\par
+\end{minipage}\par\medskip
 
 \textbf{Inputs and outputs.} $(t,k)=(1,1)$ and $(1,2)$ for $n$ up to $256$, and $(2,1)$ for $n$ up to $24$. Output: the tag $(r,a)$, its length, and $|\C(\bx)|$.
 
@@ -477,7 +477,7 @@ Hence $4t\log n$ is the leading term of the tag length, not a strict upper limit
 \end{enumerate}
 
 \textbf{Important code} (\path{schemes/average_case/scheme.py}):
-\par\noindent\begin{minipage}{\columnwidth}\scriptsize
+\par\medskip\noindent\hspace*{1em}\begin{minipage}{\dimexpr\columnwidth-1em}\scriptsize
 \begin{verbatim}
 def encode(x):
     if not is_dense(x, k, delta):       # rare
@@ -488,15 +488,15 @@ def encode(x):
     a = find_modulus(f(x), [f(z) for z in C if z != x])
     return (1, h(x), psi(x), f(x) % a, a)
 \end{verbatim}
-\end{minipage}\par
-\noindent\begin{minipage}{\columnwidth}\scriptsize
+\end{minipage}\par\medskip
+\noindent\hspace*{1em}\begin{minipage}{\dimexpr\columnwidth-1em}\scriptsize
 \begin{verbatim}
 def decode(y, (1, hx, px, r, a), n):
     S = [z for z in suspects(y, n, k, t)
          if is_dense(z) and h(z) == hx and psi(z) == px]
     return the unique z in S with f(z) % a == r
 \end{verbatim}
-\end{minipage}\par
+\end{minipage}\par\medskip
 
 \textbf{Inputs and outputs.} As for the worst case, plus $\delta$ and $L$. Output: the tag $(\text{flag},h,\psi,r,a)$ with the length of each part, and $|\Ct(\bx)|$.
 
@@ -543,14 +543,14 @@ C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
 \textbf{Choices made.} (i) $\Delta$ is the \emph{exact} maximum degree of the confusion graph, computed once per $(n,k,t)$ by enumerating all $2^n$ strings; the paper's asymptotic bound would be about 40 times larger here and cost about 10 more bits. (ii) $Q$ is the smallest prime above $\Delta b$. (iii) Two rounds, as in the paper. (iv) Block lengths up to $16$ bits, since $\Delta$ requires all $2^n$ strings.
 
 \textbf{Important code} (\path{schemes/li21.py}):
-\par\noindent\begin{minipage}{\columnwidth}\scriptsize
+\par\medskip\noindent\hspace*{1em}\begin{minipage}{\dimexpr\columnwidth-1em}\scriptsize
 \begin{verbatim}
 def colour(x):                     # the tag of x
     c1 = lambda z: witness(int(z), neighbours(z), Q1)
     return witness(c1(x), [c1(z) for z in neighbours(x)],
                    Q2)
 \end{verbatim}
-\end{minipage}\par
+\end{minipage}\par\medskip
 Here \texttt{neighbours}$(\bz)=\C(\bz)\setminus\{\bz\}$; round-1 colours are cached, since one colour needs the round-1 colours of all neighbours.
 
 \textbf{Inputs and outputs.} Blocks of $n=8$--$16$ bits with $t=k=1$. Output: the colour and its length.
