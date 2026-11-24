@@ -1,57 +1,39 @@
 """
-documents.py -- binary documents split into fixed-size blocks (report, Sec. III-C).
+documents.py -- binary documents split into blocks at line breaks (report, Sec. III-C).
 
-A document is a text file of '0'/'1' characters (line breaks are ignored when reading the bits). It is cut into
-consecutive blocks of b bits; every block is encoded separately and Bob decodes block j of his version with tag j.
-Because an insertion or a deletion would shift every later block, the edited version must keep the length, and
-each block must be reachable from the original block by at most t length-preserving edits of at most k bits.
+A document is a text file of '0'/'1' characters, one block per line. Every block is encoded separately and Bob
+decodes line j of his version with tag j. Because the blocks are delimited by line breaks rather than by bit
+positions, an insertion or a deletion only changes the length of its own line, and every other block still lines up.
+Each edited line must be reachable from the original line by at most t k-substring edits (insertions, deletions and
+substitutions allowed); the original block length n is known to Bob.
 
-  read_bits(path)                         the document as one bit string
-  split_blocks(bits, b)                   consecutive b-bit blocks (the length must be a multiple of b)
-  min_substitution_edits(x, y, k)         fewest length-preserving k-bit edits turning block x into block y
-  classify_blocks(xs, ys, t, k)           per block: 'unchanged', 'fits' or 'violation'
+  read_blocks(path)                  the document's blocks (one per non-empty line)
+  classify_blocks(xs, ys, k, t)      per block: 'unchanged', 'fits' (y in B_t(x)) or 'violation'
 """
+from docex.core.edits import edit_ball
 
 
-def read_bits(path):
+def read_blocks(path):
     with open(path, encoding="utf-8") as fh:
-        text = fh.read()
-    bits = "".join(text.split())
-    bad = set(bits) - {"0", "1"}
-    if bad:
-        raise ValueError(f"{path}: only 0 and 1 are allowed, found {sorted(bad)}")
-    return bits
+        lines = [line.strip() for line in fh]
+    blocks = [line for line in lines if line]
+    for j, block in enumerate(blocks):
+        bad = set(block) - {"0", "1"}
+        if bad:
+            raise ValueError(f"{path}, line {j + 1}: only 0 and 1 are allowed, found {sorted(bad)}")
+    return blocks
 
 
-def split_blocks(bits, b):
-    if len(bits) % b:
-        raise ValueError(f"document length {len(bits)} is not a multiple of the block size {b}")
-    return [bits[i:i + b] for i in range(0, len(bits), b)]
-
-
-def min_substitution_edits(x, y, k):
-    """Fewest edits, each replacing at most k consecutive bits by as many bits, that turn x into y (|x| = |y|).
-    Greedy: start a window of k bits at the first differing position not yet covered."""
-    if len(x) != len(y):
-        raise ValueError("blocks of different lengths")
-    diff = [i for i in range(len(x)) if x[i] != y[i]]
-    edits, covered_to = 0, -1
-    for i in diff:
-        if i > covered_to:
-            edits += 1
-            covered_to = i + k - 1
-    return edits
-
-
-def classify_blocks(xs, ys, t, k):
-    """For each pair of blocks: 'unchanged', 'fits' (at most t edits of at most k bits) or 'violation'."""
+def classify_blocks(xs, ys, k, t):
+    """For each pair of blocks: 'unchanged', 'fits' (the edited block is within t k-substring edits of the
+    original, i.e. in B_t(x)) or 'violation'."""
     if len(xs) != len(ys):
-        raise ValueError(f"the versions have {len(xs)} and {len(ys)} blocks")
+        raise ValueError(f"the versions have {len(xs)} and {len(ys)} lines: line breaks must not be added or removed")
     out = []
     for x, y in zip(xs, ys):
         if x == y:
             out.append("unchanged")
-        elif len(x) == len(y) and min_substitution_edits(x, y, k) <= t:
+        elif y in edit_ball(x, k, t):
             out.append("fits")
         else:
             out.append("violation")
