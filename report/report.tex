@@ -447,7 +447,12 @@ $t,k$ & $n$ & mean tag & max & $4t\log n$ & $|\C(\bx)|$ & decoded\\
 
 \begin{itemize}
 \item All 2{,}065 decoding trials succeeded (Table~\ref{tab:thm1}).
-\item Tag length (Fig.~\ref{fig:thm1len}): for $k=1$ the exhaustive worst case is $12,12,12,14,14$ bits at $n=8,\dots,16$, against $4t\log n=12,\dots,16$. For $k=2$ the worst string exceeds the leading term at small $n$ ($14,14,16$ against $12,13.3,14.3$ at $n=8,10,12$). Each doubling of $n$ adds $3.2$ bits for $t=1$ (bound: $4$) and $7.5$ bits for $t=2$ (bound: $8$).
+\item \emph{Tag length} (Fig.~\ref{fig:thm1len}, Table~\ref{tab:thm1}):
+\begin{itemize}
+\item $t=k=1$: over all $2^n$ strings, the longest tag is $12,12,12,14,14$ bits for $n=8,10,12,14,16$, while $4t\log n=12,13.3,14.3,15.2,16$. Even the worst string stays within the leading term.
+\item $t=1$, $k=2$: for small $n$ the longest tag is slightly \emph{above} the leading term: $14,14,16$ bits against $12,13.3,14.3$ for $n=8,10,12$.
+\item Growth: each time $n$ doubles, the average tag grows by $3.2$ bits for $t=1$ and $7.5$ bits for $t=2$, while $4t\log n$ grows by $4$ and $8$ bits.
+\end{itemize}
 \item Confusion ball: fitted slopes $2.04$, $2.25$, $4.97$ for $(t,k)=(1,1),(1,2),(2,1)$, against $2t=2,2,4$.
 \item Time: encoding slopes $2.46,2.69,4.58$ (theory $\le3,3,5$); decoding slopes $0.97,1.13,1.89$ (theory $\le2,2,3$).
 \end{itemize}
