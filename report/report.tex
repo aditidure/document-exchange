@@ -518,28 +518,7 @@ def decode(y, (1, hx, px, r, a), n):
 
 %---------------------------------------------------------------------
 \subsection{Higher-Complexity Scheme of~\cite{li21}}\label{sec:li21}
-\textbf{Methodology.} A valid scheme is a proper colouring of the confusion graph, and the tag is the colour of $\bx$ (Proposition~\ref{prop:colour}). Scheme~\cite{li21} computes the colour of one string with two rounds of Linial-type recolouring. Each colour $i$ is mapped to a polynomial $g_i$ over $\mathbb F_Q$ whose coefficients are the base-$Q$ digits of $i$, and the new colour of $\bx$ is $(\alpha,g_{c(\bx)}(\alpha))$ for the smallest $\alpha$ at which $g_{c(\bx)}$ differs from the polynomials of all neighbours' colours (the \emph{witness}). Round~1 starts from the string itself ($Q_1>\Delta n$); round~2 starts from the round-1 colour ($Q_2>\Delta\lceil\log Q_1^2\rceil$). The tag is the round-2 colour, $\lceil\log Q_2^2\rceil$ bits. Bob lists his suspects and keeps the one with the received colour.
-
-\textbf{Choices made.} (i) $\Delta$ is the \emph{exact} maximum degree of the confusion graph, computed once per $(n,k,t)$ by enumerating all $2^n$ strings; the paper's asymptotic bound would be about 40 times larger here and cost about 10 more bits. (ii) $Q$ is the smallest prime above $\Delta b$. (iii) Two rounds, as in the paper. (iv) Block lengths up to $16$ bits, since $\Delta$ requires all $2^n$ strings.
-
-\textbf{Important code} (\path{schemes/li21.py}):
-\par\medskip\noindent\hspace*{1em}\begin{minipage}{\dimexpr\columnwidth-1em}\scriptsize
-\begin{verbatim}
-def colour(x):                     # the tag of x
-    c1 = lambda z: witness(int(z), neighbours(z), Q1)
-    return witness(c1(x), [c1(z) for z in neighbours(x)],
-                   Q2)
-\end{verbatim}
-\end{minipage}\par\medskip
-Here \texttt{neighbours}$(\bz)=\C(\bz)\setminus\{\bz\}$; round-1 colours are cached, since one colour needs the round-1 colours of all neighbours.
-
-\textbf{Inputs and outputs.} Blocks of $n=8$--$16$ bits with $t=k=1$. Output: the colour and its length.
-
-\textbf{Verification.} The tests check the witness property, that the colouring is proper on all $256$ strings of length $8$ (every confusable pair gets different colours), and random round trips.
-
-\textbf{Results.} At $n=8$: $\Delta=64$, $Q_1=521$, $Q_2=1217$, a $21$-bit tag. At $n=16$: $\Delta=292$ and a $26$-bit tag; computing $\Delta$ takes $36$\,s once, and a block takes about $0.15$\,s to encode and $1$\,s to decode.
-
-\textbf{Interpretation.} The scheme is optimal only asymptotically: its $O(\log\log n)$ term hides the factor $b$ in $Q>\Delta b$, which costs about $2\log n$ bits at these sizes.
+The higher-complexity scheme was implemented directly from Li, Gabrys and Farnoud, ``Constructing low-redundancy codes via distributed graph coloring''~\cite{li21} (\path{schemes/li21.py}). It is run with $t=k=1$ on blocks of up to $16$ bits, and its results are given with those of the other two schemes in Sec.~\ref{sec:compare}.
 
 %---------------------------------------------------------------------
 \subsection{Comparison on Synthetic Edited Data}\label{sec:compare}
@@ -582,7 +561,7 @@ $n$ & Thm~\ref{thm:1} & Thm~\ref{thm:2} & \cite{li21} & $4t\log n$ & encode & de
 \item \emph{Complexity:} fitted slopes of encoding time are $2.0$, $2.4$ and $7.1$, and of decoding time $1.2$, $1.1$ and $8.8$ (Theorem~\ref{thm:1}, Theorem~\ref{thm:2}, \cite{li21}). At $n=16$, scheme~\cite{li21} is about $200$ times slower to encode and $20{,}000$ times slower to decode than Theorem~\ref{thm:1}.
 \end{itemize}
 
-\textbf{Interpretation.} All three schemes have the leading term $4t\log n$ or less, so the differences come from the lower-order terms. Theorem~\ref{thm:1} needs only one confusion ball and its modulus is far smaller than the ball, so it is both the shortest and the fastest. Scheme~\cite{li21} pays about $2\log b$ bits for $Q>\Delta b$, and its cost is high because the colour of $\bx$ needs the round-1 colours of all $\Delta$ neighbours, i.e.\ about $\Delta^2=O(n^{4t})$ ball enumerations. Theorem~\ref{thm:2} pays a fixed $\approx70$ bits for $h$ and $\psi$. Asymptotically, scheme~\cite{li21} has the smaller remainder and Theorem~\ref{thm:2} the smaller leading term, but at the sizes where all three can be run, the worst-case scheme is best on both counts.
+\textbf{Interpretation.} All three schemes have the leading term $4t\log n$ or less, so the differences come from the lower-order terms. Theorem~\ref{thm:1} needs only one confusion ball and its modulus is far smaller than the ball, so it is both the shortest and the fastest. Scheme~\cite{li21} pays extra lower-order bits at these small sizes, and its cost is high because the colour of $\bx$ depends on the confusion balls of all its neighbours, i.e.\ about $O(n^{4t})$ ball enumerations. Theorem~\ref{thm:2} pays a fixed $\approx70$ bits for $h$ and $\psi$. Asymptotically, scheme~\cite{li21} has the smaller remainder and Theorem~\ref{thm:2} the smaller leading term, but at the sizes where all three can be run, the worst-case scheme is best on both counts.
 
 \subsubsection{Two hand-edited documents}\label{sec:docs}
 To check the schemes on edits made by hand rather than by the random channel, we made two documents.
