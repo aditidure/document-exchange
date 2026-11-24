@@ -384,7 +384,7 @@ By Lemma~\ref{lem:dense}, $\Pr[\text{not dense}]=O(n^{-3})$ and $\Pr[\text{dense
 This section covers the second part of the project: we implement the worst-case and the average-case schemes of~\cite{narayanan}, verify their encoding lengths, and compare both with the higher-complexity scheme of~\cite{li21} on synthetic edited data.
 
 \subsection{Methodology}
-\textbf{Code.} All schemes are written in Python (standard library only) as one package, \texttt{docex}: \path{core/} holds the edit model, the labeling function and syndrome compression; \path{schemes/} holds one module per scheme; \path{io/} reads documents; and \path{experiments/} holds one script per experiment, which writes its results to \path{results/} as CSV files, from which \path{experiments/figures.py} draws the figures. Every component was added with its own unit tests; the order in which it was built is given in Table~\ref{tab:build} (Appendix).
+\textbf{Code.} All schemes are written in Python (standard library only) as one package, \texttt{docex}: \path{core/} holds the edit model, the labeling function and syndrome compression; \path{schemes/} holds one module per scheme; \path{io/} reads documents; and \path{experiments/} holds one script per experiment, which writes its results to \path{results/} as CSV files, from which \path{experiments/figures.py} draws the figures. Every component was added with its own unit tests.
 
 \textbf{Common interface.} Every scheme provides \texttt{encode}$(\bx)\to$ tag and \texttt{decode}$(\by,\text{tag},n)\to\bx$, and every tag reports its own length in bits. Hence all three schemes can be run on the same strings and the same edits.
 
@@ -684,41 +684,6 @@ $k$ (bits) & $t\le1$ & $t\le2$ & $t\le3$ & $t\le5$\\
 Both schemes of~\cite{narayanan} work as claimed: every tag decoded, the confusion ball grows as $n^{2t}$, the complexities hold, and both redundancy bounds are verified in the form they are stated. The experiments also show what the asymptotic statements hide. $4t\log n$ is a leading term that small-$n$, $k=2$ cases exceed; the average-case scheme saves $\log n$ only after paying about 70 bits of side information, so it overtakes the worst-case scheme near $n\approx2^{108}$; and the low-complexity scheme pays 2--2.5 times the redundancy of an exhaustive colouring in return for polynomial running time. On real version-control history the substring-edit model fits in form but not in scale: real edits add whole lines and need $k$ in the hundreds of bits.
 
 %=====================================================================
-\appendix[Reproducing the Results]
-{\raggedright
-\begin{itemize}
-\item \texttt{python3 run\_all.py}: unit tests and all experiments (about 15\,min; add \texttt{--quick} for a one-minute check).
-\item \texttt{python3 experiments/extension\_commits.py --repo PATH}: the extension on any local git repository (only statistics are written).
-\item \texttt{python3 experiments/figures.py}: draws every figure (needs matplotlib).
-\end{itemize}
-Seeds are fixed, so reruns reproduce the reported numbers.\par}
-
-\begin{table}[!t]
-\caption{Build sequence of the implementation (one commit per row)}\label{tab:build}
-\centering\footnotesize
-\begin{tabular}{@{}r>{\raggedright\arraybackslash}p{0.47\columnwidth}>{\raggedright\arraybackslash}p{0.33\columnwidth}@{}}
-\toprule
-\# & Component & Checked by\\
-\midrule
-1 & Project skeleton & --\\
-2 & Edit model: $\B_t$, $\C_t$ via~\eqref{eq:identity}, Bob's suspects, channel (\path{core/edits.py}) & Example~1; Eq.~\eqref{eq:identity} vs.\ Def.~2 for all $n\le6$\\
-3 & Labeling $f(\bx)=\bx$ and syndrome compression (\path{core/labeling.py}, \path{core/syndrome.py}) & Toy example $a=7$; smallest valid $a$; $a\le2MR\ln(MR)$\\
-4 & Common scheme interface; worst-case scheme (\path{schemes/base.py}, \path{schemes/worst_case.py}) & Example $\bx=10110\to(9,13)$; all $\bx\in\{0,1\}^8$, all $\by\in\B_1(\bx)$\\
-5 & Verification of Theorem~\ref{thm:1}: Monte Carlo and exhaustive runs, figures (\path{experiments/verify_worst_case.py}) & 2{,}065/2{,}065 decoded; Fig.~\ref{fig:thm1len}\\
-6 & Density: partition at $0^k1^k$, both density forms, Lemma~\ref{lem:dense} bound (\path{schemes/average_case/density.py}) & Example of~\cite{li22}; brute force; bound $<n^{-3}$\\
-7 & Hash $h$ and localisation (\path{schemes/average_case/hash_h.py}) & Edit always inside the located window\\
-8 & Side information $\psi$ and the one-edit decoder (\path{schemes/average_case/psi.py}) & One edit recovered at $n=2^{13}$; never a wrong output\\
-9 & Average-case scheme: restricted ball, encoder, decoder (\path{schemes/average_case/scheme.py}) & Both branches decode; survivors $\subseteq\Ct(\bx)$\\
-10 & Verification of Theorem~\ref{thm:2}, figures (\path{experiments/verify_average_case.py}) & Slope $\le4t-1$; remainder$/\log n$ falls\\
-11 & Higher-complexity scheme of~\cite{li21}: two-round distributed colouring (\path{schemes/li21.py}) & Proper colouring on all $2^8$ strings; round trips\\
-12 & Binary documents, one block per line, edit-model check (\path{io/documents.py}, \path{documents/}) & Hand-worked edit counts; block classification\\
-13 & Comparison of the three schemes on synthetic blocks, figures (\path{experiments/compare.py}) & 675/675 decoded; slopes in Fig.~\ref{fig:cost}\\
-14 & The three schemes on the two hand-edited documents, figure (\path{experiments/run_documents.py}) & All $16$ blocks recovered by every scheme\\
-15 & Extension on real version-control history: diffs to $k$-substring edits, $t_{\min}(k)$, density, real windows (\path{io/diffs.py}, \path{core/bounds.py}, \path{experiments/extension_commits.py}) & Hand-worked diffs; Lemma~\ref{lem:ball} bound value; 40/40 real windows decoded\\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \begin{thebibliography}{9}
 \bibitem{narayanan} H.~Narayanan, V.~Ramkumar, R.~Bitar, and A.~Wachter-Zeh, ``Coding schemes for document exchange under multiple substring edits,'' arXiv:2601.18441, 2026.
 \bibitem{orlitsky} A.~Orlitsky, ``Interactive communication: Balanced distributions, correlated files, and average-case complexity,'' in \emph{Proc. IEEE FOCS}, 1991, pp.~228--238.
