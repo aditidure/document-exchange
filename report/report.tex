@@ -8,6 +8,7 @@
 \usepackage{cite}
 \usepackage{xcolor}
 \newcommand{\FloatBarrier}{\clearpage}
+\usepackage{url}
 \usepackage[hidelinks]{hyperref}
 \graphicspath{{figures/}}
 
@@ -384,11 +385,11 @@ By Lemma~\ref{lem:dense}, $\Pr[\text{not dense}]=O(n^{-3})$ and $\Pr[\text{dense
 
 \textbf{File hierarchy.} The package \texttt{docex} mirrors the structure of Sec.~\ref{sec:theorypart}:
 \begin{itemize}
-\item \texttt{core/}: what every scheme shares, namely the edit model (Definitions~1--2, Eq.~\eqref{eq:identity}), the labeling function (Lemma~\ref{lem:label}), syndrome compression (Lemma~\ref{lem:sc}) and the reference bounds;
-\item \texttt{schemes/}: one module per scheme behind a common interface (\texttt{encode}, \texttt{decode}, tag length in bits): \texttt{worst\_case} (Theorem~\ref{thm:1}), \texttt{average\_case/} (density, $h$, $\psi$ and Theorem~\ref{thm:2}) and \texttt{li21} (the higher-complexity scheme);
-\item \texttt{io/}: conversion of text documents to bits and their division into blocks.
+\item \path{core/}: what every scheme shares, namely the edit model (Definitions~1--2, Eq.~\eqref{eq:identity}), the labeling function (Lemma~\ref{lem:label}), syndrome compression (Lemma~\ref{lem:sc}) and the reference bounds;
+\item \path{schemes/}: one module per scheme behind a common interface (\texttt{encode}, \texttt{decode}, tag length in bits): \texttt{worst\_case} (Theorem~\ref{thm:1}), \texttt{average\_case/} (density, $h$, $\psi$ and Theorem~\ref{thm:2}) and \texttt{li21} (the higher-complexity scheme);
+\item \path{io/}: conversion of text documents to bits and their division into blocks.
 \end{itemize}
-Experiments (\texttt{experiments/}), the hand-edited documents (\texttt{documents/}) and the tests (\texttt{tests/}) sit beside the package.
+Experiments (\path{experiments/}), the hand-edited documents (\path{documents/}) and the tests (\path{tests/}) sit beside the package.
 
 \begin{table}[!t]
 \caption{Build sequence of the implementation (one commit per row)}\label{tab:build}
@@ -398,9 +399,10 @@ Experiments (\texttt{experiments/}), the hand-edited documents (\texttt{document
 \# & Component & Checked by\\
 \midrule
 1 & Project skeleton & --\\
-2 & Edit model: $\B_t$, $\C_t$ via~\eqref{eq:identity}, Bob's suspects, channel (\texttt{core/edits.py}) & Example~1; Eq.~\eqref{eq:identity} vs.\ Def.~2 for all $n\le6$\\
-3 & Labeling $f(\bx)=\bx$ and syndrome compression (\texttt{core/labeling.py}, \texttt{core/syndrome.py}) & Toy example $a=7$; smallest valid $a$; $a\le2MR\ln(MR)$\\
-4 & Common scheme interface; worst-case scheme (\texttt{schemes/base.py}, \texttt{schemes/worst\_case.py}) & Example $\bx=10110\to(9,13)$; all $\bx\in\{0,1\}^8$, all $\by\in\B_1(\bx)$\\
+2 & Edit model: $\B_t$, $\C_t$ via~\eqref{eq:identity}, Bob's suspects, channel (\path{core/edits.py}) & Example~1; Eq.~\eqref{eq:identity} vs.\ Def.~2 for all $n\le6$\\
+3 & Labeling $f(\bx)=\bx$ and syndrome compression (\path{core/labeling.py}, \path{core/syndrome.py}) & Toy example $a=7$; smallest valid $a$; $a\le2MR\ln(MR)$\\
+4 & Common scheme interface; worst-case scheme (\path{schemes/base.py}, \path{schemes/worst_case.py}) & Example $\bx=10110\to(9,13)$; all $\bx\in\{0,1\}^8$, all $\by\in\B_1(\bx)$\\
+5 & Verification of Theorem~\ref{thm:1}: Monte Carlo and exhaustive runs, figures (\path{experiments/verify_worst_case.py}) & 2{,}065/2{,}065 decoded; slopes in Figs.~\ref{fig:thm1len}--\ref{fig:time}\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -408,11 +410,11 @@ Experiments (\texttt{experiments/}), the hand-edited documents (\texttt{document
 \subsection{Low-Complexity Schemes}
 
 \subsubsection{Worst-case scheme}\label{sec:results}
-\textbf{Functions and hierarchy.} \emph{Edit model} (\texttt{core/edits.py}, Definitions~1--2): \texttt{apply\_edit} performs one edit; \texttt{one\_edit\_ball} enumerates $\B_1(\bz)$ by position, deleted length and inserted block, exactly as counted in the proof of Lemma~\ref{lem:ball}; \texttt{edit\_ball} builds $\B_t$ one edit at a time; \texttt{confusion\_ball} computes $\C_t(\bx)$ through~\eqref{eq:identity}; \texttt{suspects} returns Bob's set $\B_t(\by)\cap\{0,1\}^n$; and \texttt{random\_edits} is the synthetic channel. Its tests check the paper's Example~1, the count $|\B_1|\le(m+1)(k+1)(2^{k+1}-1)$, identity~\eqref{eq:identity} against Definition~2 for every string with $n\le6$, the symmetry of confusability, and $\bx\in\B_t(\by)\cap\{0,1\}^n\subseteq\C_t(\bx)$. \texttt{labeling.label\_int} gives $f$; \texttt{syndrome.find\_modulus} finds $a_{\bx}$ (Lemma~\ref{lem:sc}); \texttt{worst\_case.encode} combines them, and \texttt{worst\_case.decode} filters Bob's suspects by residue.
+\textbf{Functions and hierarchy.} \emph{Edit model} (\path{core/edits.py}, Definitions~1--2): \texttt{apply\_edit} performs one edit; \texttt{one\_edit\_ball} enumerates $\B_1(\bz)$ by position, deleted length and inserted block, exactly as counted in the proof of Lemma~\ref{lem:ball}; \texttt{edit\_ball} builds $\B_t$ one edit at a time; \texttt{confusion\_ball} computes $\C_t(\bx)$ through~\eqref{eq:identity}; \texttt{suspects} returns Bob's set $\B_t(\by)\cap\{0,1\}^n$; and \texttt{random\_edits} is the synthetic channel. Its tests check the paper's Example~1, the count $|\B_1|\le(m+1)(k+1)(2^{k+1}-1)$, identity~\eqref{eq:identity} against Definition~2 for every string with $n\le6$, the symmetry of confusability, and $\bx\in\B_t(\by)\cap\{0,1\}^n\subseteq\C_t(\bx)$. \texttt{labeling.label\_int} gives $f$; \texttt{syndrome.find\_modulus} finds $a_{\bx}$ (Lemma~\ref{lem:sc}); \texttt{worst\_case.encode} combines them, and \texttt{worst\_case.decode} filters Bob's suspects by residue.
 
-\emph{Labeling and syndrome compression} (\texttt{core/labeling.py}, \texttt{core/syndrome.py}, Lemmas~\ref{lem:sc}--\ref{lem:label}): \texttt{label\_int} computes $f$; \texttt{find\_modulus} returns the smallest $a\ge2$ that divides none of the differences $d_{\by}=f(\bx)-f(\by)$; \texttt{tag\_bits} counts the bits of $(r,a)$; and \texttt{lemma1\_bound} evaluates the guarantee $2MR\ln(MR)$ of the proof. The tests check the toy example of the Stage~1 report (labels $100$ against $103,97,110,112$ give $a=7$, $r=2$), that the modulus found is valid and the smallest one, the bad-prime count of the proof ($\le R-1$ distinct prime factors per difference), and that the modulus found respects $2MR\ln(MR)$.
+\emph{Labeling and syndrome compression} (\path{core/labeling.py}, \path{core/syndrome.py}, Lemmas~\ref{lem:sc}--\ref{lem:label}): \texttt{label\_int} computes $f$; \texttt{find\_modulus} returns the smallest $a\ge2$ that divides none of the differences $d_{\by}=f(\bx)-f(\by)$; \texttt{tag\_bits} counts the bits of $(r,a)$; and \texttt{lemma1\_bound} evaluates the guarantee $2MR\ln(MR)$ of the proof. The tests check the toy example of the Stage~1 report (labels $100$ against $103,97,110,112$ give $a=7$, $r=2$), that the modulus found is valid and the smallest one, the bad-prime count of the proof ($\le R-1$ distinct prime factors per difference), and that the modulus found respects $2MR\ln(MR)$.
 
-\emph{Scheme} (\texttt{schemes/base.py}, \texttt{schemes/worst\_case.py}, Theorem~\ref{thm:1}): every scheme implements the same interface, \texttt{encode}$(\bx)\to$ tag and \texttt{decode}$(\by,\text{tag},n)\to\bx$, and every tag reports its length in bits. \texttt{WorstCaseScheme.encode} lists $\C(\bx)$, labels it and returns $(f(\bx)\bmod a_{\bx},a_{\bx})$; \texttt{decode} keeps the suspect whose label has residue $r$ and raises an error unless exactly one does. The tests check the running example of the presentation ($\bx=10110$, $t=k=1$ gives the tag $(9,13)$, and $\by=1010$ decodes to $\bx$), random round trips for $(t,k)\in\{(1,1),(1,2),(2,1)\}$, and an exhaustive round trip over every $\bx\in\{0,1\}^8$ and every $\by\in\B_1(\bx)$.
+\emph{Scheme} (\path{schemes/base.py}, \path{schemes/worst_case.py}, Theorem~\ref{thm:1}): every scheme implements the same interface, \texttt{encode}$(\bx)\to$ tag and \texttt{decode}$(\by,\text{tag},n)\to\bx$, and every tag reports its length in bits. \texttt{WorstCaseScheme.encode} lists $\C(\bx)$, labels it and returns $(f(\bx)\bmod a_{\bx},a_{\bx})$; \texttt{decode} keeps the suspect whose label has residue $r$ and raises an error unless exactly one does. The tests check the running example of the presentation ($\bx=10110$, $t=k=1$ gives the tag $(9,13)$, and $\by=1010$ decodes to $\bx$), random round trips for $(t,k)\in\{(1,1),(1,2),(2,1)\}$, and an exhaustive round trip over every $\bx\in\{0,1\}^8$ and every $\by\in\B_1(\bx)$.
 
 \textbf{Choice of labeling function.} Lemma~\ref{lem:label} is used as a black box in the theory, but it cannot be used in code: its construction is only cited in~\cite{narayanan}, and its length, $657\log n$ bits for $t=1$, $k=2$, exceeds $n$ at every $n$ we can simulate. We therefore use $f(\bx)=\bx$, read as an integer ($R=n$). This choice is injective, so property~(1) of Lemma~\ref{lem:sc} holds for every pair and decoding is always correct. It violates property~(2), so the \emph{guarantee} $\log a_{\bx}\le\log|\C(\bx)|+o(\log n)$ is not inherited; since $R$ enters the proof only through $\log R$, the effect is on the bound, not on correctness, and we report measured tag lengths instead of relying on the bound.
 
@@ -420,7 +422,7 @@ Experiments (\texttt{experiments/}), the hand-edited documents (\texttt{document
 
 \textbf{Inputs.} A bit string $\bx$ and parameters $(t,k)$; Bob's $\by$ is produced by \texttt{random\_edits}, which applies $t$ uniformly random $k$-substring edits (random position, $|\bu|,|\bv|\le k$, random inserted bits).
 
-\textbf{Verification strategy.} \emph{Monte Carlo:} for each $(t,k,n)$ we draw $\bx$ uniformly, encode it counting every transmitted bit, corrupt it with $t$ random edits and decode, over many $\bx$ and edit patterns; means carry 95\% confidence intervals ($\pm1.96\,s/\sqrt N$) and success rates 95\% Wilson intervals. \emph{Exhaustive enumeration:} a worst-case bound concerns every $\bx$, which sampling cannot certify, so for small $n$ we encode all $2^n$ strings ($n\le16$ for $t=k=1$). We then compare the tag length with $4t\log n$, $|\C(\bx)|$ with $n^{2t}$ (Lemma~\ref{lem:ball}), and the measured running times with the complexity exponents.
+\textbf{Verification strategy.} \emph{Monte Carlo:} for each $(t,k,n)$ we draw $\bx$ uniformly, encode it counting every transmitted bit, corrupt it with $t$ random edits and decode, over many $\bx$ and edit patterns; means carry 95\% confidence intervals ($\pm1.96\,s/\sqrt N$) and success rates 95\% Wilson intervals. \emph{Exhaustive enumeration:} a worst-case bound concerns every $\bx$, which sampling cannot certify, so for small $n$ we encode all $2^n$ strings ($n\le16$ for $t=k=1$). We then compare the tag length with $4t\log n$, $|\C(\bx)|$ with $n^{2t}$ (Lemma~\ref{lem:ball}), and the measured running times with the complexity exponents. The experiment is \path{experiments/verify_worst_case.py}; it writes \path{results/worst_case_mc.csv} and \path{results/worst_case_exhaustive.csv}, from which \path{experiments/figures.py} draws Figs.~\ref{fig:thm1len}--\ref{fig:time}.
 
 \textbf{Results.} \begin{figure*}[!t]
 \centering\includegraphics[width=\textwidth]{fig01_thm1_length.png}
@@ -439,7 +441,7 @@ $t,k$ & $n$ & mean tag & max & $4t\log n$ & $|\C(\bx)|$ & decoded\\
 1,1 & 16 & $12.1\pm0.1$ & 14 & 16.0 & 229 & 200/200\\
 1,1 & 64 & $18.3\pm0.3$ & 20 & 24.0 & 3{,}905 & 150/150\\
 1,1 & 256 & $24.8\pm0.6$ & 26 & 32.0 & 65{,}257 & 50/50\\
-1,2 & 16 & $15.5\pm0.3$ & 16 & 16.0 & 803 & 200/200\\
+1,2 & 16 & $15.4\pm0.3$ & 16 & 16.0 & 803 & 200/200\\
 1,2 & 64 & $22.4\pm0.5$ & 24 & 24.0 & 18{,}554 & 50/50\\
 2,1 & 8 & $14.4\pm0.3$ & 16 & 24.0 & 221 & 200/200\\
 2,1 & 24 & $26.0\pm0.7$ & 28 & 36.7 & 50{,}930 & 40/40\\
@@ -461,7 +463,7 @@ Fig.~\ref{fig:thm1len} and Table~\ref{tab:thm1} summarise the encoding length. A
 \label{fig:time}
 \end{figure}
 
-Lemma~\ref{lem:ball} is confirmed (Fig.~\ref{fig:ball}): fitted slopes of $\log|\C|$ against $\log n$ are $2.04$, $2.25$ and $4.97$ for $(t,k)=(1,1),(1,2),(2,1)$, against $2t=2,2,4$. The explicit bound~\eqref{eq:ballbound} is about $2{,}300\times$ the measured ball at $n=256$. Timing slopes (Fig.~\ref{fig:time}) are $2.58, 2.60, 4.76$ for encoding (theory $\le3,3,5$) and $1.09, 1.00, 1.97$ for decoding (theory $\le2,2,3$); decoding is about $2{,}000\times$ faster than encoding at $n=256$.
+Lemma~\ref{lem:ball} is confirmed (Fig.~\ref{fig:ball}): fitted slopes of $\log|\C|$ against $\log n$ are $2.04$, $2.25$ and $4.97$ for $(t,k)=(1,1),(1,2),(2,1)$, against $2t=2,2,4$. The explicit bound~\eqref{eq:ballbound} is about $2{,}300\times$ the measured ball at $n=256$. Timing slopes (Fig.~\ref{fig:time}) are $2.46, 2.69, 4.58$ for encoding (theory $\le3,3,5$) and $0.97, 1.13, 1.89$ for decoding (theory $\le2,2,3$); decoding is about $2{,}000\times$ faster than encoding at $n=256$.
 
 
 \subsubsection{Average-case scheme}

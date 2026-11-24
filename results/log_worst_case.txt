@@ -1,0 +1,37 @@
+Theorem 1, Monte Carlo
+  MC  t=1 k=1 n=  16: bits  12.1 ± 0.1 (max 14) vs 4t·log n  16.0 | |C|      229 | a    49.4 | enc      0.8 ms dec   0.02 ms | decoded 200/200
+  MC  t=1 k=1 n=  32: bits  15.2 ± 0.3 (max 16) vs 4t·log n  20.0 | |C|      948 | a   131.8 | enc      3.7 ms dec   0.05 ms | decoded 200/200
+  MC  t=1 k=1 n=  64: bits  18.3 ± 0.3 (max 20) vs 4t·log n  24.0 | |C|     3905 | a   414.7 | enc     19.0 ms dec   0.10 ms | decoded 150/150
+  MC  t=1 k=1 n= 128: bits  21.7 ± 0.3 (max 22) vs 4t·log n  28.0 | |C|    15949 | a  1249.1 | enc     99.0 ms dec   0.18 ms | decoded 100/100
+  MC  t=1 k=1 n= 256: bits  24.8 ± 0.6 (max 26) vs 4t·log n  32.0 | |C|    65257 | a  4007.6 | enc    814.6 ms dec   0.36 ms | decoded 50/50
+  MC  t=1 k=2 n=  16: bits  15.4 ± 0.3 (max 16) vs 4t·log n  16.0 | |C|      803 | a   144.7 | enc      3.2 ms dec   0.03 ms | decoded 200/200
+  MC  t=1 k=2 n=  24: bits  17.6 ± 0.3 (max 18) vs 4t·log n  18.3 | |C|     2145 | a   313.9 | enc      8.4 ms dec   0.05 ms | decoded 200/200
+  MC  t=1 k=2 n=  32: bits  18.7 ± 0.3 (max 20) vs 4t·log n  20.0 | |C|     4091 | a   478.8 | enc     16.0 ms dec   0.06 ms | decoded 150/150
+  MC  t=1 k=2 n=  48: bits  20.6 ± 0.4 (max 22) vs 4t·log n  22.3 | |C|     9848 | a   956.6 | enc     51.9 ms dec   0.10 ms | decoded 100/100
+  MC  t=1 k=2 n=  64: bits  22.4 ± 0.5 (max 24) vs 4t·log n  24.0 | |C|    18554 | a  1817.6 | enc    134.5 ms dec   0.14 ms | decoded 50/50
+  MC  t=2 k=1 n=   8: bits  14.4 ± 0.3 (max 16) vs 4t·log n  24.0 | |C|      221 | a   104.3 | enc      7.9 ms dec   0.15 ms | decoded 200/200
+  MC  t=2 k=1 n=  12: bits  18.6 ± 0.3 (max 20) vs 4t·log n  28.7 | |C|     1695 | a   444.4 | enc     38.2 ms dec   0.33 ms | decoded 200/200
+  MC  t=2 k=1 n=  16: bits  21.7 ± 0.2 (max 22) vs 4t·log n  32.0 | |C|     6505 | a  1254.7 | enc    128.3 ms dec   0.52 ms | decoded 150/150
+  MC  t=2 k=1 n=  20: bits  24.5 ± 0.5 (max 26) vs 4t·log n  34.6 | |C|    22525 | a  3476.6 | enc    465.4 ms dec   0.89 ms | decoded 75/75
+  MC  t=2 k=1 n=  24: bits  26.0 ± 0.7 (max 28) vs 4t·log n  36.7 | |C|    50930 | a  6568.0 | enc   1223.5 ms dec   1.14 ms | decoded 40/40
+Theorem 1, exhaustive
+  ALL t=1 k=1 n=  8: max bits 12 vs 12.0 | |C| min/mean/max 37/50.5/65 (largest at 01011010) | 0.1s
+  ALL t=1 k=1 n= 10: max bits 12 vs 13.3 | |C| min/mean/max 56/81.5/106 (largest at 0101001010) | 0.4s
+  ALL t=1 k=1 n= 12: max bits 12 vs 14.3 | |C| min/mean/max 79/120.5/157 (largest at 010101101010) | 1.6s
+  ALL t=1 k=1 n= 14: max bits 14 vs 15.2 | |C| min/mean/max 106/167.5/219 (largest at 01010010100101) | 8.4s
+  ALL t=1 k=1 n= 16: max bits 14 vs 16.0 | |C| min/mean/max 137/222.5/293 (largest at 0101001010010101) | 42.7s
+  ALL t=1 k=2 n=  8: max bits 14 vs 12.0 | |C| min/mean/max 88/125.0/146 (largest at 00110011) | 0.2s
+  ALL t=1 k=2 n= 10: max bits 14 vs 13.3 | |C| min/mean/max 148/236.2/277 (largest at 0011001100) | 1.3s
+  ALL t=1 k=2 n= 12: max bits 16 vs 14.3 | |C| min/mean/max 224/387.2/457 (largest at 001100011001) | 7.4s
+  ALL t=2 k=1 n=  6: max bits 12 vs 20.7 | |C| min/mean/max 57/61.7/64 (largest at 001010) | 0.2s
+  ALL t=2 k=1 n=  8: max bits 16 vs 24.0 | |C| min/mean/max 163/214.3/249 (largest at 01100110) | 2.0s
+  ALL t=2 k=1 n= 10: max bits 18 vs 26.6 | |C| min/mean/max 386/640.6/832 (largest at 0101100101) | 18.3s
+
+  checks
+    every tag decoded: 2065/2065
+    t=1 k=2 n=8: worst tag 14 exceeds the leading term 12.0 by 2.0 bits (allowed by the o(log n) term)
+    t=1 k=2 n=10: worst tag 14 exceeds the leading term 13.3 by 0.7 bits (allowed by the o(log n) term)
+    t=1 k=2 n=12: worst tag 16 exceeds the leading term 14.3 by 1.7 bits (allowed by the o(log n) term)
+    t=1 k=1: slope log|C| 2.04 (2t=2) | bits/doubling 3.20 (<= 4) | enc slope 2.46 (<= 3) | dec slope 0.97 (<= 2)
+    t=1 k=2: slope log|C| 2.25 (2t=2) | bits/doubling 3.38 (<= 4) | enc slope 2.69 (<= 3) | dec slope 1.13 (<= 2)
+    t=2 k=1: slope log|C| 4.97 (2t=4) | bits/doubling 7.46 (<= 8) | enc slope 4.58 (<= 5) | dec slope 1.89 (<= 3)
