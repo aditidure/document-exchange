@@ -547,7 +547,17 @@ C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
 \subsection{Higher-Complexity Scheme of~\cite{li21}}\label{sec:li21}
 \textcolor{red!70!black}{\textbf{[To be completed.]} Implementation of the distributed graph colouring scheme of~\cite{li21} (redundancy $4t\log n+O(\log\log n)$, encoding $O(n^{8t})$, decoding $O(n^{10t})$), written with AI assistance since it is a comparison point rather than the focus of the project. As asked in the project brief, this is the only higher-complexity scheme in the comparison.}
 
+\textbf{Design choice.} The project brief asks for a comparison with the higher-complexity optimal scheme, so this is the only higher-complexity scheme implemented; the exhaustive colouring of the confusion graph used in an earlier version is not part of the comparison.
+
 \subsection{Two Hand-Edited Documents}\label{sec:docs}
+\textbf{Design choices.}
+\begin{enumerate}
+\item[(i)] \emph{Format: binary documents.} Each document is a text file of the characters \texttt{0} and \texttt{1}, edited by hand bit by bit. In ordinary text a single character is $8$ bits, so even a one-letter edit needs $k\ge8$; the constant $k^{2t}3^{2kt}$ of~\eqref{eq:ballbound} then makes the confusion ball too large to enumerate and the tag longer than the text it protects.
+\item[(ii)] \emph{Fixed-size blocks.} Each document is cut into blocks of $b$ bits, every block is encoded separately, and Bob decodes block $j$ of his version with tag $j$. An insertion or deletion would shift every later block, so the hand edits keep the length: each edit replaces at most $k$ consecutive bits by the same number of bits, and each block receives at most $t$ edits.
+\item[(iii)] \emph{Same blocks for every scheme.} The block size is set by the most expensive scheme, the higher-complexity scheme of~\cite{li21} ($b\approx8$--$12$ bits, $t=k=1$), and the worst-case and average-case schemes run on the same blocks, so all three are compared on identical input and identical edits.
+\item[(iv)] \emph{Consequence.} Since Alice does not know which blocks Bob's version changed, she sends a tag for every block, and the total redundancy, about $(n/b)\cdot4t\log b$, grows linearly with the document length instead of as $4t\log n$; at these block sizes a tag is about as long as its block. The documents therefore test correctness on real hand-made edits and the \emph{relative} redundancy and cost of the three schemes, not compression against sending the file.
+\end{enumerate}
+
 \textcolor{red!70!black}{\textbf{[To be completed.]} Results of the worst-case, average-case and higher-complexity schemes on two documents edited by hand: tag length, encoding and decoding time, and decoding success for each scheme.}
 
 \subsection{Comparison of Redundancy and Complexity}\label{sec:compare}
