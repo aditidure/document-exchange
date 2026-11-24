@@ -412,6 +412,7 @@ Experiments (\path{experiments/}), the hand-edited documents (\path{documents/})
 12 & Binary documents, one block per line, edit-model check (\path{io/documents.py}, \path{documents/}) & Hand-worked edit counts; block classification\\
 13 & Comparison of the three schemes on synthetic blocks, figures (\path{experiments/compare.py}) & 675/675 decoded; slopes in Fig.~\ref{fig:cost}\\
 14 & The three schemes on the two hand-edited documents, figure (\path{experiments/run_documents.py}) & All $16$ blocks recovered by every scheme\\
+15 & Extension on real version-control history: diffs to $k$-substring edits, $t_{\min}(k)$, density, real windows (\path{io/diffs.py}, \path{core/bounds.py}, \path{experiments/extension_commits.py}) & Hand-worked diffs; Lemma~\ref{lem:ball} bound value; 40/40 real windows decoded\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -645,63 +646,75 @@ $n$ & Thm~\ref{thm:1} & Thm~\ref{thm:2} & \cite{li21} & $4t\log n$ & encode & de
 
 %=====================================================================
 \section{Extension: Real Version-Control Data}\label{sec:ext}
-\textcolor{red!70!black}{\textbf{[To be completed.]} The extension will be rerun on commits we make ourselves to a GitHub repository. The analysis below uses 480 commits from four public repositories.}
+\textbf{Question.} Do the edits people actually make fit the model of~\cite{narayanan}, a few ($t$) substring edits of at most $k$ bits each, or do real edit patterns break its assumptions?
 
-{\sloppy\textbf{Data and method.} We shallow-cloned four public GitHub repositories (flask, gitignore, the Rust book and the-art-of-command-line\footnote{\texttt{pallets/flask}, \texttt{github/gitignore}, \texttt{rust-lang/book}, \texttt{jlevy/the-art-of-command-line}.}) and, for 120 non-merge commits each, saved one modified text file before and after: 480 pairs, median 5.9\,KiB. A line-level then byte-level diff gives the changed regions in bit positions; $t_{\min}(k)$, the fewest $k$-substring edits transforming old into new, is computed by dynamic programming over groups of neighbouring changes. Pairs that do not fit are recorded as model violations, not decoder failures.\par}
+{\sloppy\textbf{Data and method.} We used the full history (all branches) of one of our own local git repositories, a course project written in Verilog, Python, Makefiles and Markdown. For every non-merge commit and every modified text file we took the file before (parent) and after (commit): 101 file changes in 31 commits, median file 6.6\,KB ($n\approx53{,}000$ bits). Only statistics are recorded (\path{results/ext_*.csv}); no file contents or names. For each change (\path{io/diffs.py}): a line-level then byte-level diff gives the changed regions in bits; $t_{\min}(k)$, the fewest $k$-substring edits turning the old file into the new, is found by dynamic programming over groups of neighbouring regions (a group spanning $s$ bits needs $\lceil s/k\rceil$ edits). A change \emph{fits} $(t,k)$ if $t_{\min}(k)\le t$; one that does not is a model violation, not a decoder failure. We also check the line view of Sec.~\ref{sec:docs}, the density precondition of Theorem~\ref{thm:2}, and run the three schemes on real single-bit edits (\path{experiments/extension_commits.py}).\par}
 
 \begin{table}[!t]
-\caption{Fraction of real commits fitting $t$ edits of $\le k$ bits}\label{tab:fit}
+\caption{Share of real file changes that fit $t$ edits of $\le k$ bits}\label{tab:fit}
 \centering\footnotesize
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
 $k$ (bits) & $t\le1$ & $t\le2$ & $t\le3$ & $t\le5$\\
 \midrule
-2 & 1\% & 1\% & 1\% & 9\%\\
-8 & 6\% & 10\% & 11\% & 18\%\\
-64 & 17\% & 27\% & 33\% & 45\%\\
-512 & 41\% & 60\% & 68\% & 75\%\\
-4096 & 67\% & 82\% & 86\% & 90\%\\
+1, 2, 4 & 0\% & 0\% & 0\% & 0\%\\
+8 & 0\% & 0\% & 0\% & 1\%\\
+64 & 1\% & 3\% & 4\% & 5\%\\
+512 & 5\% & 9\% & 16\% & 33\%\\
+4096 & 26\% & 48\% & 62\% & 75\%\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[!t]
 \centering\includegraphics[width=\columnwidth]{fig12_real_fit.png}
-\caption{Share of real commits that fit the $(t,k)$ model, against $k$.}
+\caption{Share of real file changes that fit the $(t,k)$ model, against $k$.}
 \label{fig:fit}
 \end{figure}
 
 \begin{figure}[!t]
 \centering\includegraphics[width=\columnwidth]{fig13_real_hunks.png}
-\caption{Number of changed regions per commit and size of the largest change.}
+\caption{Number of changed regions per file change, and size of the largest one.}
 \label{fig:hunks}
 \end{figure}
 
 \begin{figure}[!t]
 \centering\includegraphics[width=\columnwidth]{fig14_real_tag.png}
-\caption{Estimated tag length ($2\log$ of bound~\eqref{eq:ballbound}) for commits fitting $t\le3$, against file size; dashed: sending the file.}
+\caption{Estimated tag ($2\log$ of bound~\eqref{eq:ballbound}) for changes fitting $t\le3$, against file size; dashed: sending the whole file.}
 \label{fig:realtag}
 \end{figure}
 
-\textbf{Findings} (Table~\ref{tab:fit}, Figs.~\ref{fig:fit}--\ref{fig:realtag}). (1) Real edits are few but long: a median commit changes 2 regions and 351 bits, and only 1\% of commits fit $k=2$, $t\le3$; most fit only for $k$ in the tens to hundreds of bytes. (2) At such $k$ the constant of~\eqref{eq:ballbound} dominates: the estimated tag has median 127, 541 and 3{,}391 bits for $k=2,64,512$, against $4t\log n\approx73$--$89$; for small files with $k=512$ it can exceed the file itself. (3) All 480 files are dense for $k=1,2$ at the paper's $\delta$ (median longest gap 11 bits against $\delta\approx498$), so real text satisfies the average-case precondition despite non-uniform statistics. (4) On 40 real isolated 1--2-bit edits cut as 64-bit windows ($t=1$, $k=2$), all 40 decoded, with mean $|\C|=18{,}488$ and mean tag $22.0\pm0.2$ bits, matching random windows ($18{,}429$; $22.2\pm0.2$). The model's \emph{form}, a few localised edits, matches real commits; its small-$k$ assumption does not.
+\textbf{Findings} (Table~\ref{tab:fit}, Figs.~\ref{fig:fit}--\ref{fig:realtag}).
+
+(1) \emph{Edits are few but long.} A median change touches 4 regions but 3{,}231 bits, and its largest region is 1{,}768 bits. No change fits $k\le4$ for any $t\le5$, and at most 3\% fit $k\le32$; a median change needs $t_{\min}=398$ edits at $k=8$ and $52$ at $k=64$. Even with $k=512$ bits only 16\% fit $t\le3$. The small constant $k$ of the paper is the assumption real data breaks.
+
+(2) \emph{Lines are added, not just edited.} 100 of the 101 changes add or remove whole lines (97 add), so the one-block-per-line layout of Sec.~\ref{sec:docs}, which needs the number of lines to stay fixed, also breaks. Of the 375 lines that are changed in place, 43 (11\%) are one edit of $\le8$ bits and 103 (27\%) one edit of $\le64$ bits.
+
+(3) \emph{At the $k$ real edits need, the constant dominates.} For changes fitting $t\le3$, the estimated tag has median 966 bits at $k=64$ (against $4t\log n\approx84$) and 6{,}738 bits at $k=512$ (against 139), because of the $3^{2kt}$ factor in~\eqref{eq:ballbound}. On small files it exceeds the file itself (Fig.~\ref{fig:realtag}).
+
+(4) \emph{Density holds.} All 101 old files are dense for $k=1$ and $k=2$ at the paper's $\delta$: the longest gap between $0^k1^k$ patterns is at most 11 bits for $k=1$ (median 10), against $\delta\approx500$. Real text, though far from uniform, meets the precondition of Theorem~\ref{thm:2}.
+
+(5) \emph{Where an edit is small, the schemes work.} We cut 16-bit windows of the old file around 40 isolated real single-bit edits (all flips) and ran the three schemes with $t=k=1$. All 40 were recovered by every scheme, with tags of 11.9 (Thm.~1), 73.0 (Thm.~2) and 26.0 bits~\cite{li21}, as on synthetic data (Sec.~\ref{sec:compare}).
+
+\textbf{Answer.} The \emph{form} of the model, a few localised substring edits, matches real commits; its \emph{scale} does not. Real edits insert whole lines of hundreds to thousands of bits, so $k$ must be large and the $3^{2kt}$ term outweighs $4t\log n$. Density holds; bounded $k$ breaks.
 
 %=====================================================================
 \FloatBarrier
 \section{Limitations and Observations on the Reference}\label{sec:limits}
-\textbf{Limitations.} The labeling function and the block hash in $\psi$ are stand-ins (Sec.~\ref{sec:impl}); scheme~\cite{li21} uses the exact maximum degree, which requires enumerating all $2^n$ strings and limits it to blocks of about $16$ bits; brute-force enumeration limits the low-complexity schemes to $n\le256$ ($t=1$) and $n\le24$ ($t=2$); on documents, every block needs its own tag, so the total redundancy grows linearly with the document length; the paper's $\delta$ exceeds $n$ at encodable sizes; the real-data tag is an estimate, and the real windows are selected small edits. Multi-round protocols and non-uniform source models were not attempted.
+\textbf{Limitations.} The labeling function and the block hash in $\psi$ are stand-ins (Sec.~\ref{sec:impl}); scheme~\cite{li21} uses the exact maximum degree, which requires enumerating all $2^n$ strings and limits it to blocks of about $16$ bits; brute-force enumeration limits the low-complexity schemes to $n\le256$ ($t=1$) and $n\le24$ ($t=2$); on documents, every block needs its own tag, so the total redundancy grows linearly with the document length; the paper's $\delta$ exceeds $n$ at encodable sizes; the real data is one repository (101 file changes), the real-data tag is an estimate, and the real windows are selected small edits. Multi-round protocols and non-uniform source models were not attempted.
 
 \textbf{Observations on~\cite{narayanan}.} (i) The ``no extra cost'' search for $a_{\bx}$ needs re-checking of earlier neighbours. (ii) Theorem~2 refers to ``$a_{\bx}$ as in Lemma~2''; Lemma~1 is meant. (iii) The average redundancy should be normalised by $2^n$, not $n$. (iv) The restricted confusion ball needs ``same $h,\psi$'' for Lemma~\ref{lem:restricted}. (v) Lemma~\ref{lem:dense}'s bound is valid but loose by many orders of magnitude.
 
 %=====================================================================
 \section{Conclusion}
-Both schemes of~\cite{narayanan} work as claimed: every tag decoded, the confusion ball grows as $n^{2t}$, the complexities hold, and both redundancy bounds are verified in the form they are stated. The experiments also show what the asymptotic statements hide. $4t\log n$ is a leading term that small-$n$, $k=2$ cases exceed; the average-case scheme saves $\log n$ only after paying about 70 bits of side information, so it overtakes the worst-case scheme near $n\approx2^{108}$; and the low-complexity scheme pays 2--2.5 times the redundancy of an exhaustive colouring in return for polynomial running time. On real repositories the substring-edit model fits in form but not in scale, since real edits have large $k$.
+Both schemes of~\cite{narayanan} work as claimed: every tag decoded, the confusion ball grows as $n^{2t}$, the complexities hold, and both redundancy bounds are verified in the form they are stated. The experiments also show what the asymptotic statements hide. $4t\log n$ is a leading term that small-$n$, $k=2$ cases exceed; the average-case scheme saves $\log n$ only after paying about 70 bits of side information, so it overtakes the worst-case scheme near $n\approx2^{108}$; and the low-complexity scheme pays 2--2.5 times the redundancy of an exhaustive colouring in return for polynomial running time. On real version-control history the substring-edit model fits in form but not in scale: real edits add whole lines and need $k$ in the hundreds of bits.
 
 %=====================================================================
 \appendix[Reproducing the Results]
 {\raggedright
 \begin{itemize}
 \item \texttt{python3 run\_all.py}: unit tests and all experiments (about 15\,min; add \texttt{--quick} for a one-minute check).
-\item \texttt{python3 experiments/e4\_extension\_real\_data.py collect}: downloads the real data once (needs git and internet).
+\item \texttt{python3 experiments/extension\_commits.py --repo PATH}: the extension on any local git repository (only statistics are written).
 \item \texttt{python3 experiments/figures.py}: draws every figure (needs matplotlib).
 \end{itemize}
 Seeds are fixed, so reruns reproduce the reported numbers.\par}

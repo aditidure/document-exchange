@@ -275,7 +275,47 @@ def documents():
     save(fig, "fig15_documents.png")
 
 
-FIGS = [theorem1, theorem2, comparison, documents]
+# ================================================================ extension: real version-control edits
+def extension():
+    if not have("ext_fit.csv", "ext_pairs.csv"):
+        return
+    fit = read_csv("ext_fit.csv")
+    fig, ax = plt.subplots(figsize=(6.4, 4.3))
+    for T, c in zip([1, 2, 3, 5], [C1, C2, C3, C5]):
+        ax.semilogx([r["k"] for r in fit], [100 * r[f"t_le_{T}"] for r in fit], "o-", color=c, lw=2, label=f"t ≤ {T}")
+    ax.axvline(8, color=INK2, ls=":", lw=1)
+    ax.text(8.6, 92, "1 byte", fontsize=8, color=INK2)
+    ax.set_xlabel("k (bits per substring edit)"); ax.set_ylabel("changes that fit the model (%)")
+    ax.set_title("Do real commits fit 't edits of ≤ k bits'?"); ax.set_ylim(0, 100); ax.legend()
+    save(fig, "fig12_real_fit.png")
+
+    pairs = read_csv("ext_pairs.csv")
+    fig, axes = plt.subplots(2, 1, figsize=(6.4, 7.0))
+    axes[0].hist([min(r["hunks"], 60) for r in pairs], bins=30, color=C1)
+    axes[0].set_xlabel("changed regions per file change (capped at 60)"); axes[0].set_ylabel("file changes")
+    axes[0].set_title("How many edits does a change make?")
+    axes[1].hist([r["max_hunk_bits"] for r in pairs if r["max_hunk_bits"] > 0], bins=[2 ** i for i in range(0, 19)], color=C2)
+    axes[1].set_xscale("log"); axes[1].set_xlabel("largest changed region (bits)"); axes[1].set_ylabel("file changes")
+    axes[1].set_title("How long is the largest edit?")
+    save(fig, "fig13_real_hunks.png")
+
+    if have("ext_tag.csv"):
+        tag = [r for r in read_csv("ext_tag.csv") if r["k"] > 0]
+        if tag:
+            fig, ax = plt.subplots(figsize=(6.6, 4.4))
+            allx = []
+            for k, c in zip((8, 64, 512), (C3, C4, C2)):
+                rs = [r for r in tag if int(r["k"]) == k]
+                if rs:
+                    ax.loglog([r["n_bits"] for r in rs], [r["est_tag"] for r in rs], "o", color=c, ms=6, label=f"estimated tag, k = {k}")
+                    allx += [r["n_bits"] for r in rs]
+            ax.loglog([min(allx), max(allx)], [min(allx), max(allx)], "--", color=INK2, lw=1.4, label="n (send the whole file)")
+            ax.set_xlabel("file size n (bits)"); ax.set_ylabel("bits")
+            ax.set_title("Estimated tag for changes with t ≤ 3 (Lemma 3 bound)"); ax.legend(fontsize=8)
+            save(fig, "fig14_real_tag.png")
+
+
+FIGS = [theorem1, theorem2, comparison, documents, extension]
 
 if __name__ == "__main__":
     for f in FIGS:

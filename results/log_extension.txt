@@ -1,0 +1,28 @@
+Carch_Project: 101 modified text files
+
+101 file changes; median file 6614 bytes, median 4 changed regions and 3231 changed bits
+share of changes that fit t edits of <= k bits
+     k  t<=1  t<=2  t<=3  t<=5
+      1   0.00   0.00   0.00   0.00
+      2   0.00   0.00   0.00   0.00
+      4   0.00   0.00   0.00   0.00
+      8   0.00   0.00   0.00   0.01
+     16   0.00   0.00   0.01   0.03
+     32   0.00   0.01   0.03   0.04
+     64   0.01   0.03   0.04   0.05
+    128   0.03   0.05   0.05   0.07
+    256   0.05   0.05   0.09   0.15
+    512   0.05   0.09   0.16   0.33
+   1024   0.08   0.22   0.32   0.53
+   4096   0.26   0.48   0.62   0.75
+
+line view: 1/101 changes keep every line break; of 375 changed lines, 43 are one edit of <= 8 bits and 103 one edit of <= 64 bits
+density (k=1, paper's delta): 101/101 dense
+density (k=2, paper's delta): 101/101 dense
+k=  64: 4 changes with t<=3; estimated tag median 966 bits (4t log n 84, file 1472 bits)
+k= 512: 16 changes with t<=3; estimated tag median 6738 bits (4t log n 139, file 99300 bits)
+
+real single-bit edits usable as 16-bit windows: 40 (flip 40, ins 0, del 0)
+  worst-case (Thm 1)        : recovered 40/40, tag 11.9 bits
+  average-case (Thm 2)      : recovered 40/40, tag 73.0 bits
+  distributed colouring [7] : recovered 40/40, tag 26.0 bits
