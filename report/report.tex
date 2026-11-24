@@ -603,13 +603,7 @@ doc2 & Thm~\ref{thm:1} & 96 bits & 8/8 & 0.01\,s & $<0.01$\,s\\
 \end{tabular}
 \end{table}
 
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig15_documents.png}
-\caption{Tag length per block for each document, labelled with the line number and the edit made (\emph{ins}, \emph{del}, \emph{flip}, or none); the dashed line is the block length.}
-\label{fig:docs}
-\end{figure}
-
-\textbf{Results.} Every scheme recovered all $16$ blocks, for insertions, deletions and flips alike (Table~\ref{tab:docs}, Fig.~\ref{fig:docs}). The total tag for a $128$-bit document is $96$--$98$ bits for Theorem~\ref{thm:1}, $208$ for~\cite{li21} and $584$ for Theorem~\ref{thm:2}, the same per-block lengths as in Table~\ref{tab:compare} at $n=16$.
+\textbf{Results.} Every scheme recovered all $16$ blocks, for insertions, deletions and flips alike (Table~\ref{tab:docs}). The total tag for a $128$-bit document is $96$--$98$ bits for Theorem~\ref{thm:1}, $208$ for~\cite{li21} and $584$ for Theorem~\ref{thm:2}, the same per-block lengths as in Table~\ref{tab:compare} at $n=16$.
 
 \textbf{Interpretation.} The tags are large relative to the documents because the blocks are short ($4\log16=16$ bits equals the block length) and every block needs its own tag, since Alice does not know which lines changed. Splitting is still worthwhile here: with seven edits per document, a single Theorem~\ref{thm:1} tag for the whole document would need about $4\cdot7\cdot\log128=196$ bits.
 
