@@ -411,6 +411,7 @@ Experiments (\path{experiments/}), the hand-edited documents (\path{documents/})
 11 & Higher-complexity scheme of~\cite{li21}: two-round distributed colouring (\path{schemes/li21.py}) & Proper colouring on all $2^8$ strings; round trips\\
 12 & Binary documents, one block per line, edit-model check (\path{io/documents.py}, \path{documents/}) & Hand-worked edit counts; block classification\\
 13 & Comparison of the three schemes on synthetic blocks, figures (\path{experiments/compare.py}) & 675/675 decoded; slopes in Fig.~\ref{fig:cost}\\
+14 & The three schemes on the two hand-edited documents, figure (\path{experiments/run_documents.py}) & All $16$ blocks recovered by every scheme\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -569,7 +570,36 @@ C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
 
 \textbf{Documents and functions.} The two documents (\path{documents/doc1}, \path{documents/doc2}) each hold $128$ random bits written as $8$ lines of $16$ bits, one line per block ($b=16$, $t=k=1$). The original is \path{original.txt}; the edited version \path{edited.txt} is changed by hand under the rule \emph{at most one edit of one bit per line} (insert, delete or flip a bit; line breaks unchanged). \path{io/documents.py} provides \texttt{read\_blocks} (one block per line; characters other than \texttt{0}/\texttt{1} are rejected) and \texttt{classify\_blocks}, which labels each block \emph{unchanged}, \emph{fits} (the edited line lies in $\B_t$ of the original line) or \emph{violation}; violations are reported as departures from the edit model, not as decoder failures. Its tests cover reading and the classification of a flip, an insertion, a deletion and a two-edit violation.
 
-\textcolor{red!70!black}{\textbf{[To be completed.]} Results of the worst-case, average-case and higher-complexity schemes on two documents edited by hand: tag length, encoding and decoding time, and decoding success for each scheme.}
+\textbf{Edits made.} In each document seven of the eight lines were edited by hand and one was left unchanged: \path{doc1} received three insertions, two deletions and two flips, \path{doc2} three insertions, three deletions and one flip. Every edited line lies in $\B_1$ of the original line, so no block violates the model. The run is \path{experiments/run_documents.py} (results in \path{results/documents_blocks.csv} and \path{results/documents_summary.csv}).
+
+\begin{table}[!t]
+\caption{The three schemes on the two hand-edited documents ($8$ blocks of $16$ bits, $t=k=1$)}\label{tab:docs}
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Doc. & Scheme & total tag & recovered & encode & decode\\
+\midrule
+doc1 & Thm~\ref{thm:1} & 98 bits & 8/8 & $<0.01$\,s & $<0.01$\,s\\
+ & Thm~\ref{thm:2} & 584 bits & 8/8 & 0.06\,s & $<0.01$\,s\\
+ & \cite{li21} & 208 bits & 8/8 & 1.1\,s & 6.5\,s\\
+\midrule
+doc2 & Thm~\ref{thm:1} & 96 bits & 8/8 & 0.01\,s & $<0.01$\,s\\
+ & Thm~\ref{thm:2} & 584 bits & 8/8 & 0.02\,s & $<0.01$\,s\\
+ & \cite{li21} & 208 bits & 8/8 & 1.4\,s & 6.9\,s\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig15_documents.png}
+\caption{Tag length per block for each document, labelled with the line number and the edit made (\emph{ins}, \emph{del}, \emph{flip}, or none); the dashed line is the block length.}
+\label{fig:docs}
+\end{figure}
+
+\textbf{Results.} Every scheme recovered all $16$ blocks of the two documents, for insertions, deletions and substitutions alike (Table~\ref{tab:docs}, Fig.~\ref{fig:docs}). The tag lengths are those of the synthetic comparison at $n=16$: about $12$ bits per block for Theorem~\ref{thm:1} ($14$ for one block of \path{doc1}), $26$ for scheme~\cite{li21} and $73$ for Theorem~\ref{thm:2}, giving $96$--$98$, $208$ and $584$ bits for a $128$-bit document. Scheme~\cite{li21} needs a one-time computation of $\Delta=292$ (about $36$\,s) and per block takes about $0.15$\,s to encode and $0.8$\,s to decode, about $200$ times slower to encode than Theorem~\ref{thm:1}.
+
+\textbf{Why the tags are large relative to the document.} (1) \emph{Small blocks.} The redundancy $4t\log n$ is small compared with $n$ only for long strings; at $n=16$, $4\log16=16$ bits equals the block length. (2) \emph{One tag per block.} Alice does not know which lines changed, so every block needs a tag. (3) \emph{Constants.} Scheme~\cite{li21} pays the factor $b$ in $Q>\Delta b$ (Sec.~\ref{sec:li21}), and Theorem~\ref{thm:2} pays about $70$ bits for $h$ and $\psi$. Splitting is nevertheless not wasteful for these documents: they contain seven edits each, and a single Theorem~\ref{thm:1} tag for the whole $128$-bit document would have to handle $t=7$ edits, i.e.\ about $4\cdot7\cdot\log128=196$ bits (and could not be computed by enumeration), against $96$--$98$ bits for eight single-edit blocks. Splitting costs more than a whole-document tag only when there are few edits.
 
 \subsection{Comparison of Redundancy and Complexity}\label{sec:compare}
 \textbf{Set-up.} \path{experiments/compare.py} runs the three schemes through the common interface on the \emph{same} random strings and the \emph{same} random edits: $t=k=1$, $n=8,10,\dots,16$, $15$ strings per length and $3$ edit patterns per string. It records the tag length, the encoding and decoding time per string, and decoding success (results in \path{results/compare.csv}).

@@ -1,0 +1,8 @@
+doc1: 8 blocks of 16 bits | unchanged 1, fits 7, violations 0
+  worst-case (Thm 1)        : total tag    98 bits for 128 document bits | recovered 8/8 (in-model 8/8) | enc 0.00s dec 0.00s
+  average-case (Thm 2)      : total tag   584 bits for 128 document bits | recovered 8/8 (in-model 8/8) | enc 0.06s dec 0.00s
+  distributed colouring [7] : total tag   208 bits for 128 document bits | recovered 8/8 (in-model 8/8) | enc 1.12s dec 6.48s
+doc2: 8 blocks of 16 bits | unchanged 1, fits 7, violations 0
+  worst-case (Thm 1)        : total tag    96 bits for 128 document bits | recovered 8/8 (in-model 8/8) | enc 0.01s dec 0.00s
+  average-case (Thm 2)      : total tag   584 bits for 128 document bits | recovered 8/8 (in-model 8/8) | enc 0.02s dec 0.00s
+  distributed colouring [7] : total tag   208 bits for 128 document bits | recovered 8/8 (in-model 8/8) | enc 1.35s dec 6.87s

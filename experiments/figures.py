@@ -238,7 +238,44 @@ def comparison():
     save(fig, "fig11_compare_cost.png")
 
 
-FIGS = [theorem1, theorem2, comparison]
+# ================================================================ the two hand-edited documents
+def documents():
+    if not have("documents_blocks.csv"):
+        return
+    with open(os.path.join(RESULTS, "documents_blocks.csv"), encoding="utf-8") as fh:
+        import csv
+        rows = list(csv.DictReader(fh))
+    docs = sorted({r["document"] for r in rows})
+    names = list(SCHEME_COLOUR)
+    fig, axes = plt.subplots(len(docs), 1, figsize=(7.2, 3.3 * len(docs)), squeeze=False)
+    for ax, doc in zip(axes[:, 0], docs):
+        rs = [r for r in rows if r["document"] == doc]
+        blocks = sorted({int(r["block"]) for r in rs})
+        labels = []
+        for j in blocks:
+            r = next(q for q in rs if int(q["block"]) == j)
+            lx, ly = len(r["original"]), len(r["edited"])
+            kind = "–" if r["original"] == r["edited"] else ("ins" if ly > lx else "del" if ly < lx else "flip")
+            labels.append(f"{j + 1}\n{kind}")
+        w = 0.26
+        for i, name in enumerate(names):
+            vals = [float(next(q["bits"] for q in rs if int(q["block"]) == j and q["scheme"] == name)) for j in blocks]
+            ok = [next(q["recovered"] for q in rs if int(q["block"]) == j and q["scheme"] == name) == "1" for j in blocks]
+            ax.bar([j + (i - 1) * w for j in blocks], vals, w, color=SCHEME_COLOUR[name], label=name,
+                   edgecolor="white", linewidth=0.8)
+            for j, good in zip(blocks, ok):
+                if not good:
+                    ax.text(j + (i - 1) * w, 2, "✗", ha="center", color=INK)
+        ax.axhline(16, color=INK2, ls="--", lw=1.2)
+        ax.text(blocks[-1] + 0.45, 17, "block = 16 bits", fontsize=8, color=INK2, ha="right")
+        ax.set_xticks(blocks, labels)
+        ax.set_ylabel("tag bits"); ax.set_title(f"{doc}: tag per block (line, edit) — every block recovered")
+        ax.grid(axis="x", visible=False)
+    axes[0, 0].legend(ncol=3, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.32))
+    save(fig, "fig15_documents.png")
+
+
+FIGS = [theorem1, theorem2, comparison, documents]
 
 if __name__ == "__main__":
     for f in FIGS:
