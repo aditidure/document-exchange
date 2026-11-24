@@ -101,36 +101,6 @@ def theorem1():
 # ================================================================ Theorem 2
 def theorem2():
     from docex.schemes.average_case import density, hash_h, psi
-    if have("lemma4_density.csv"):
-        fig, ax = plt.subplots(figsize=(6.6, 4.4))
-        groups = {}
-        for r in read_csv("lemma4_density.csv"):
-            groups.setdefault((int(r["k"]), int(r["n"])), []).append(r)
-        for (k, n), rs, c in zip(groups, groups.values(), [C1, C2, C3]):
-            d = [r["delta"] for r in rs]
-            ax.plot(d, [r["nondense"] for r in rs], "o-", color=c, lw=2, label=f"measured, k={k}, n={n}")
-            ax.plot(d, [r["bound"] for r in rs], "--", color=c, lw=1.4, label=f"Lemma 4 bound, k={k}, n={n}")
-        ax.set_xlabel("δ (window length)"); ax.set_ylabel("Pr[x not (p, δ)-dense]")
-        ax.set_title("Lemma 4: non-dense strings are rare (bound valid but loose)")
-        ax.legend(fontsize=7.8)
-        save(fig, "fig04_lemma4_density.png")
-
-    if have("lemma5_one_edit.csv"):
-        fig, axes = plt.subplots(2, 1, figsize=(6.4, 7.4))
-        groups = {}
-        for r in read_csv("lemma5_one_edit.csv"):
-            groups.setdefault(int(r["k"]), []).append(r)
-        for k, rs in groups.items():
-            c = C1 if k == 1 else C2
-            x = [r["log2n"] for r in rs]
-            axes[0].plot(x, [100 * r["success"] for r in rs], "o-", color=c, lw=2, label=f"k = {k}")
-            axes[1].plot(x, [100 * min(1, r["window_frac"]) for r in rs], "o-", color=c, lw=2, label=f"k = {k}")
-        axes[0].set_title("Lemma 5: x recovered from (y, h, ψ) after one edit"); axes[0].set_ylabel("recovered (%)")
-        axes[1].set_title("Window located by h, as a share of x"); axes[1].set_ylabel("median window / n (%)")
-        for ax in axes:
-            ax.set_xlabel("log₂ n"); ax.set_ylim(0, 105); ax.legend()
-        save(fig, "fig05_lemma5_one_edit.png")
-
     if not have("average_case_mc.csv"):
         return
     rows = by_tk(read_csv("average_case_mc.csv"))
@@ -151,18 +121,6 @@ def theorem2():
 
     rs = rows.get((1, 1), [])
     if rs:
-        fig, ax = plt.subplots(figsize=(6.4, 4.4))
-        ns = [r["n"] for r in rs]
-        ax.loglog(ns, [r["ball_full"] for r in rs], "o-", color=C1, lw=2, label="|C(x)|: full confusion ball")
-        ax.loglog(ns, [r["ball_h"] for r in rs], "o-", color=C2, lw=2, label="|C̃_h(x)|: dense, same h")
-        ax.loglog(ns, [r["ball_restricted"] for r in rs], "o-", color=C3, lw=2, label="|C̃(x)|: dense, same h and ψ")
-        ax.loglog(ns, ns, "--", color=INK2, lw=1.2, label="n^(2t−1) = n (Lemma 6 bound)")
-        ax.set_xticks(ns, [str(int(n)) for n in ns]); ax.minorticks_off()
-        ax.set_xlabel("n"); ax.set_ylabel("strings Bob must rule out")
-        ax.set_title("Lemma 6: the filters shrink the confusion ball (t = k = 1)")
-        ax.legend()
-        save(fig, "fig07_thm2_ball.png")
-
         fig, ax = plt.subplots(figsize=(7.2, 4.2))
         xs = list(range(len(rs)))
         ax.bar([i - .2 for i in xs], [r["thm1_mean"] for r in rs], .38, color=C1, label="Theorem 1 tag (r, a)")

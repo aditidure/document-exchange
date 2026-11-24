@@ -500,7 +500,7 @@ def decode(y, (1, hx, px, r, a), n):
 
 \textbf{Inputs and outputs.} As for the worst case, plus $\delta$ and $L$. Output: the tag $(\text{flag},h,\psi,r,a)$ with the length of each part, and $|\Ct(\bx)|$.
 
-\textbf{Verification strategy.} A bound of the form ``leading term $+\,o(\log n)$'' cannot be checked at a single $n$. We therefore check (a) that the slope of the average tag length against $\log n$ is at most $4t-1$; (b) that the remainder (length $-$ leading term)$/\log n$ decreases with $n$; and (c) each ingredient against its own lemma: density (Lemma~\ref{lem:dense}), one-edit recovery (Lemma~\ref{lem:onecode}) and the size of $\Ct(\bx)$ (Lemma~\ref{lem:restricted}). Script: \path{experiments/verify_average_case.py}.
+\textbf{Verification strategy.} A bound of the form ``leading term $+\,o(\log n)$'' cannot be checked at a single $n$. We therefore check (a) that the slope of the average tag length against $\log n$ is at most $4t-1$, and (b) that the remainder (length $-$ leading term)$/\log n$ decreases with $n$. Script: \path{experiments/verify_average_case.py}.
 
 \textbf{Results.}
 \begin{figure*}[!t]
@@ -527,14 +527,11 @@ C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
 \end{table}
 
 \begin{itemize}
-\item \emph{Density}: the non-dense fraction falls from 72\% at $\delta=10$ to 0.05\% at $\delta=24$ ($k=1$, $n=256$). At the paper's $\delta$ the union bound is $7\cdot10^{-18}$ for $n=1024$, far below the claimed $O(n^{-3})$.
-\item \emph{One-edit recovery}: for $k=1$, $\bx$ was recovered in 60/60, 60/60, 50/60 and 23/25 trials at $n=2^{12},2^{14},2^{16},2^{18}$, with no wrong output; every failure was a localisation window spanning more than two $\psi$-blocks.
 \item \emph{Theorem~\ref{thm:2}} (Fig.~\ref{fig:thm2}, Table~\ref{tab:checks}): all 1{,}630 decodes succeeded; the slopes are within $4t-1$ and the remainder falls relative to $\log n$.
-\item \emph{Restricted ball}: ``dense and same $h$'' leaves 1--12 of 225--64{,}083 confusable strings ($n=16$--$256$), below $n^{2t-1}$; adding ``same $\psi$'' leaves only $\bx$, so $(r,a)$ costs 3 bits.
-\item \emph{Bit budget}: at $n=256$ the tag is $1+39\,(h)+39\,(\psi)+3=82$ bits, against 25 bits for Theorem~\ref{thm:1}. From the measured part sizes, the average-case scheme becomes shorter only near $n\approx2^{108}$.
+\item \emph{Bit budget}: at $n=256$ the tag is $1\,(\text{flag})+39\,(h)+39\,(\psi)+3\,(r,a)=82$ bits, against 25 bits for Theorem~\ref{thm:1}. From the measured part sizes, the average-case scheme becomes shorter only near $n\approx2^{108}$.
 \end{itemize}
 
-\textbf{Interpretation.} Theorem~\ref{thm:2} holds as stated: the leading term is $(4t-1)\log n$ and the rest grows more slowly than $\log n$. The saving of one $\log n$ is, however, paid for by about 70 bits of side information ($h$ and $\psi$), so at every size we can run it is longer than the worst-case scheme. Lemma~\ref{lem:dense} is correct but loose by many orders of magnitude.
+\textbf{Interpretation.} Theorem~\ref{thm:2} holds as stated: the leading term is $(4t-1)\log n$ and the rest grows more slowly than $\log n$. The saving of one $\log n$ is, however, paid for by about 70 bits of side information ($h$ and $\psi$), so at every size we can run it is longer than the worst-case scheme.
 
 %---------------------------------------------------------------------
 \subsection{Higher-Complexity Scheme of~\cite{li21}}\label{sec:li21}
@@ -691,7 +688,7 @@ $k$ (bits) & $t\le1$ & $t\le2$ & $t\le3$ & $t\le5$\\
 \section{Limitations and Observations on the Reference}\label{sec:limits}
 \textbf{Limitations.} The labeling function and the block hash in $\psi$ are stand-ins (Sec.~\ref{sec:impl}); scheme~\cite{li21} uses the exact maximum degree, which requires enumerating all $2^n$ strings and limits it to blocks of about $16$ bits; brute-force enumeration limits the low-complexity schemes to $n\le256$ ($t=1$) and $n\le24$ ($t=2$); on documents, every block needs its own tag, so the total redundancy grows linearly with the document length; the paper's $\delta$ exceeds $n$ at encodable sizes; the real data is one repository (101 file changes), the real-data tag is an estimate, and the real windows are selected small edits. Multi-round protocols and non-uniform source models were not attempted.
 
-\textbf{Observations on~\cite{narayanan}.} (i) The ``no extra cost'' search for $a_{\bx}$ needs re-checking of earlier neighbours. (ii) Theorem~2 refers to ``$a_{\bx}$ as in Lemma~2''; Lemma~1 is meant. (iii) The average redundancy should be normalised by $2^n$, not $n$. (iv) The restricted confusion ball needs ``same $h,\psi$'' for Lemma~\ref{lem:restricted}. (v) Lemma~\ref{lem:dense}'s bound is valid but loose by many orders of magnitude.
+\textbf{Observations on~\cite{narayanan}.} (i) The ``no extra cost'' search for $a_{\bx}$ needs re-checking of earlier neighbours. (ii) Theorem~2 refers to ``$a_{\bx}$ as in Lemma~2''; Lemma~1 is meant. (iii) The average redundancy should be normalised by $2^n$, not $n$. and (iv) the restricted confusion ball needs ``same $h,\psi$'' for Lemma~\ref{lem:restricted}.
 
 %=====================================================================
 \section{Conclusion}
@@ -723,7 +720,7 @@ Seeds are fixed, so reruns reproduce the reported numbers.\par}
 7 & Hash $h$ and localisation (\path{schemes/average_case/hash_h.py}) & Edit always inside the located window\\
 8 & Side information $\psi$ and the one-edit decoder (\path{schemes/average_case/psi.py}) & One edit recovered at $n=2^{13}$; never a wrong output\\
 9 & Average-case scheme: restricted ball, encoder, decoder (\path{schemes/average_case/scheme.py}) & Both branches decode; survivors $\subseteq\Ct(\bx)$\\
-10 & Verification of Theorem~\ref{thm:2} and Lemmas~\ref{lem:dense}--\ref{lem:restricted}, figures (\path{experiments/verify_average_case.py}) & Checks C1--C5 pass (Table~\ref{tab:checks})\\
+10 & Verification of Theorem~\ref{thm:2}, figures (\path{experiments/verify_average_case.py}) & Checks C1--C5 pass (Table~\ref{tab:checks})\\
 11 & Higher-complexity scheme of~\cite{li21}: two-round distributed colouring (\path{schemes/li21.py}) & Proper colouring on all $2^8$ strings; round trips\\
 12 & Binary documents, one block per line, edit-model check (\path{io/documents.py}, \path{documents/}) & Hand-worked edit counts; block classification\\
 13 & Comparison of the three schemes on synthetic blocks, figures (\path{experiments/compare.py}) & 675/675 decoded; slopes in Fig.~\ref{fig:cost}\\
