@@ -457,7 +457,14 @@ $t,k$ & $n$ & mean tag & max & $4t\log n$ & $|\C(\bx)|$ & decoded\\
 \item Time: encoding slopes $2.46,2.69,4.58$ (theory $\le3,3,5$); decoding slopes $0.97,1.13,1.89$ (theory $\le2,2,3$).
 \end{itemize}
 
-\textbf{Interpretation.} Theorem~\ref{thm:1} holds in the form it is stated. The tag is usually below $4t\log n$ because the modulus found is much smaller than the ball ($a_{\bx}\approx4{,}000$ against $|\C|\approx65{,}000$ at $n=256$). The excess for $k=2$ at small $n$ is allowed by the $o(\log n)$ term: the constant $k^{2t}3^{2kt}=36$ in~\eqref{eq:ballbound} adds about five bits, and the excess is gone by $n=64$.
+\textbf{Interpretation.} The measurements agree with Theorem~\ref{thm:1}.
+\begin{itemize}
+\item \emph{Correctness.} Every tag decoded, as the proof guarantees: Bob's suspects lie in $\C(\bx)$, and $a_{\bx}$ separates $\bx$ from every string in $\C(\bx)$.
+\item \emph{Why the tag is usually below $4t\log n$.} The tag $(r,a_{\bx})$ costs about $2\log a_{\bx}$ bits, while $4t\log n\approx2\log|\C(\bx)|$, since $|\C(\bx)|$ grows as $n^{2t}$. The smallest modulus that works is in practice much smaller than the ball ($a_{\bx}\approx4{,}000$ against $|\C(\bx)|\approx65{,}000$ at $n=256$, $t=k=1$); the bound covers the worst case.
+\item \emph{Why $k=2$ exceeds it at small $n$.} The bound~\eqref{eq:ballbound} on $|\C(\bx)|$ contains the constant $k^{2t}3^{2kt}$, which is $9$ for $k=1$ but $324$ for $k=2$, about $5$ bits more. At small $n$ this constant is comparable to $n^{2t}$, so the ball and the tag are larger than $4t\log n$ suggests. The constant does not grow with $n$, so it belongs to the $o(\log n)$ term, and the excess is gone by $n=64$.
+\item \emph{Growth.} The tag grows by $3.2$ and $7.5$ bits per doubling of $n$, slightly below the $4t=4$ and $8$ of the leading term.
+\end{itemize}
+Hence $4t\log n$ is the leading term of the tag length, not a strict upper limit; at the sizes we tested, the tag is usually below it.
 
 %---------------------------------------------------------------------
 \subsection{Average-Case Scheme (Theorem~\ref{thm:2})}
