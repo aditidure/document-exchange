@@ -409,6 +409,7 @@ Experiments (\path{experiments/}), the hand-edited documents (\path{documents/})
 9 & Average-case scheme: restricted ball, encoder, decoder (\path{schemes/average_case/scheme.py}) & Both branches decode; survivors $\subseteq\Ct(\bx)$\\
 10 & Verification of Theorem~\ref{thm:2} and Lemmas~\ref{lem:dense}--\ref{lem:restricted}, figures (\path{experiments/verify_average_case.py}) & Checks C1--C5 pass (Table~\ref{tab:checks})\\
 11 & Higher-complexity scheme of~\cite{li21}: two-round distributed colouring (\path{schemes/li21.py}) & Proper colouring on all $2^8$ strings; round trips\\
+12 & Binary documents, fixed-size blocks, edit-model check (\path{io/documents.py}, \path{documents/}) & Hand-worked edit counts; block classification\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -564,6 +565,8 @@ C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
 \item[(iii)] \emph{Same blocks for every scheme.} The block size is set by the most expensive scheme, the higher-complexity scheme of~\cite{li21} ($b\approx8$--$12$ bits, $t=k=1$), and the worst-case and average-case schemes run on the same blocks, so all three are compared on identical input and identical edits.
 \item[(iv)] \emph{Consequence.} Since Alice does not know which blocks Bob's version changed, she sends a tag for every block, and the total redundancy, about $(n/b)\cdot4t\log b$, grows linearly with the document length instead of as $4t\log n$; at these block sizes a tag is about as long as its block. The documents therefore test correctness on real hand-made edits and the \emph{relative} redundancy and cost of the three schemes, not compression against sending the file.
 \end{enumerate}
+
+\textbf{Documents and functions.} The two documents (\path{documents/doc1}, \path{documents/doc2}) each hold $128$ random bits written as $8$ lines of $16$ bits, one line per block ($b=16$, $t=k=1$). The original is \path{original.txt}; the edited version \path{edited.txt} is changed by hand under the rule \emph{at most one bit flipped per line, no bits inserted or deleted}. \path{io/documents.py} provides \texttt{read\_bits} (reads a document and rejects characters other than \texttt{0}/\texttt{1}), \texttt{split\_blocks} (consecutive $b$-bit blocks), \texttt{min\_substitution\_edits} (fewest length-preserving edits of at most $k$ bits that turn one block into the other) and \texttt{classify\_blocks}, which labels each block \emph{unchanged}, \emph{fits} (at most $t$ such edits) or \emph{violation}; violations are reported as departures from the edit model, not as decoder failures. Its tests cover reading, splitting, the edit count on hand-worked cases and the classification.
 
 \textcolor{red!70!black}{\textbf{[To be completed.]} Results of the worst-case, average-case and higher-complexity schemes on two documents edited by hand: tag length, encoding and decoding time, and decoding success for each scheme.}
 

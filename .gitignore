@@ -6,3 +6,6 @@ report/*.aux
 report/*.log
 report/*.out
 report/build.log
+# reference papers (third-party PDFs, not part of the repository)
+/2512.04197v1.pdf
+*:Zone.Identifier
