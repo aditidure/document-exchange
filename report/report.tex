@@ -528,17 +528,17 @@ The higher-complexity scheme was implemented directly from Li, Gabrys and Farnou
 \caption{Three schemes on the same synthetic blocks ($t=k=1$)}\label{tab:compare}
 \centering\footnotesize
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}rrrrrrr@{}}
+\begin{tabular}{@{}rrrrr@{}}
 \toprule
- & \multicolumn{3}{c}{tag length (bits)} & & \multicolumn{2}{c}{\cite{li21}: time per block}\\
-\cmidrule(lr){2-4}\cmidrule(l){6-7}
-$n$ & Thm~\ref{thm:1} & Thm~\ref{thm:2} & \cite{li21} & $4t\log n$ & encode & decode\\
+ & \multicolumn{3}{c}{tag length (bits)} & \\
+\cmidrule(lr){2-4}
+$n$ & Thm~\ref{thm:1} & Thm~\ref{thm:2} & \cite{li21} & $4t\log n$\\
 \midrule
-8 & 10.0 & 70 & 21 & 12.0 & 0.9\,ms & 1.0\,ms\\
-10 & 10.1 & 72 & 23 & 13.3 & 4.5\,ms & 6.3\,ms\\
-12 & 11.2 & 72 & 24 & 14.3 & 17\,ms & 30\,ms\\
-14 & 12.1 & 73 & 25 & 15.2 & 47\,ms & 128\,ms\\
-16 & 12.4 & 73 & 26 & 16.0 & 121\,ms & 444\,ms\\
+8 & 10.0 & 70 & 21 & 12.0\\
+10 & 10.1 & 72 & 23 & 13.3\\
+12 & 11.2 & 72 & 24 & 14.3\\
+14 & 12.1 & 73 & 25 & 15.2\\
+16 & 12.4 & 73 & 26 & 16.0\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -558,7 +558,21 @@ $n$ & Thm~\ref{thm:1} & Thm~\ref{thm:2} & \cite{li21} & $4t\log n$ & encode & de
 \textbf{Results.} All $675$ decodings succeeded (Table~\ref{tab:compare}, Figs.~\ref{fig:compare},~\ref{fig:cost}).
 \begin{itemize}
 \item \emph{Redundancy:} Theorem~\ref{thm:1} ($10$--$12$ bits) $<$ scheme~\cite{li21} ($21$--$26$ bits) $<$ Theorem~\ref{thm:2} ($70$--$73$ bits) at every $n$.
-\item \emph{Complexity:} fitted slopes of encoding time are $2.0$, $2.4$ and $7.1$, and of decoding time $1.2$, $1.1$ and $8.8$ (Theorem~\ref{thm:1}, Theorem~\ref{thm:2}, \cite{li21}). At $n=16$, scheme~\cite{li21} is about $200$ times slower to encode and $20{,}000$ times slower to decode than Theorem~\ref{thm:1}.
+\item \emph{Complexity} (time per block, Fig.~\ref{fig:cost}):
+\begin{center}\footnotesize
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{encode} & \multicolumn{2}{c}{decode}\\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+Scheme & $n=8$ & $n=16$ & $n=8$ & $n=16$\\
+\midrule
+Thm~\ref{thm:1} & 0.17\,ms & 0.60\,ms & 0.009\,ms & 0.017\,ms\\
+Thm~\ref{thm:2} & 0.48\,ms & 2.4\,ms & 0.078\,ms & 0.19\,ms\\
+\cite{li21} & 0.90\,ms & 121\,ms & 1.0\,ms & 444\,ms\\
+\bottomrule
+\end{tabular}
+\end{center}
+The fitted slopes of encoding time against $n$ are $2.0$, $2.4$ and $7.1$, and of decoding time $1.2$, $1.1$ and $8.8$ (Theorem~\ref{thm:1}, Theorem~\ref{thm:2}, \cite{li21}). At $n=16$, scheme~\cite{li21} is about $200$ times slower to encode ($121$ against $0.60$\,ms) and about $26{,}000$ times slower to decode ($444$ against $0.017$\,ms) than Theorem~\ref{thm:1}.
 \end{itemize}
 
 \textbf{Interpretation.} All three schemes have the leading term $4t\log n$ or less, so the differences come from the lower-order terms. Theorem~\ref{thm:1} needs only one confusion ball and its modulus is far smaller than the ball, so it is both the shortest and the fastest. Scheme~\cite{li21} pays extra lower-order bits at these small sizes, and its cost is high because the colour of $\bx$ depends on the confusion balls of all its neighbours, i.e.\ about $O(n^{4t})$ ball enumerations. Theorem~\ref{thm:2} pays a fixed $\approx70$ bits for $h$ and $\psi$. Asymptotically, scheme~\cite{li21} has the smaller remainder and Theorem~\ref{thm:2} the smaller leading term, but at the sizes where all three can be run, the worst-case scheme is best on both counts.
