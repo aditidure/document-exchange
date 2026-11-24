@@ -61,8 +61,8 @@ def theorem1():
         if es:
             ax.plot([r["n"] for r in es], [r["bits_max"] for r in es], "s", color=C2, ms=7, label="max over all x (exhaustive)")
         if rs:
-            ax.errorbar([r["n"] for r in rs], [r["bits_mean"] for r in rs], yerr=[r["bits_ci"] for r in rs], fmt="o-",
-                        color=C1, lw=2, ms=6, capsize=3, label="mean ± 95% CI (Monte Carlo)")
+            ax.plot([r["n"] for r in rs], [r["bits_mean"] for r in rs], "o-",
+                    color=C1, lw=2, ms=6, label="mean (Monte Carlo)")
             ax.plot([r["n"] for r in rs], [r["bits_max"] for r in rs], "^", color=C3, ms=7, label="max over samples")
         ax.set_xscale("log", base=2)
         ax.set_title(f"t = {t}, k = {k}")
@@ -108,9 +108,7 @@ def theorem2():
             groups.setdefault((int(r["k"]), int(r["n"])), []).append(r)
         for (k, n), rs, c in zip(groups, groups.values(), [C1, C2, C3]):
             d = [r["delta"] for r in rs]
-            ax.errorbar(d, [r["nondense"] for r in rs], yerr=[[max(0, r["nondense"] - r["ci_lo"]) for r in rs],
-                        [max(0, r["ci_hi"] - r["nondense"]) for r in rs]], fmt="o-", color=c, lw=2, capsize=3,
-                        label=f"measured, k={k}, n={n}")
+            ax.plot(d, [r["nondense"] for r in rs], "o-", color=c, lw=2, label=f"measured, k={k}, n={n}")
             ax.plot(d, [r["bound"] for r in rs], "--", color=c, lw=1.4, label=f"Lemma 4 bound, k={k}, n={n}")
         ax.set_xlabel("δ (window length)"); ax.set_ylabel("Pr[x not (p, δ)-dense]")
         ax.set_title("Lemma 4: non-dense strings are rare (bound valid but loose)")
@@ -125,9 +123,7 @@ def theorem2():
         for k, rs in groups.items():
             c = C1 if k == 1 else C2
             x = [r["log2n"] for r in rs]
-            axes[0].errorbar(x, [100 * r["success"] for r in rs], yerr=[[max(0, 100 * (r["success"] - r["ci_lo"])) for r in rs],
-                             [max(0, 100 * (r["ci_hi"] - r["success"])) for r in rs]], fmt="o-", color=c, lw=2, capsize=3,
-                             label=f"k = {k}")
+            axes[0].plot(x, [100 * r["success"] for r in rs], "o-", color=c, lw=2, label=f"k = {k}")
             axes[1].plot(x, [100 * min(1, r["window_frac"]) for r in rs], "o-", color=c, lw=2, label=f"k = {k}")
         axes[0].set_title("Lemma 5: x recovered from (y, h, ψ) after one edit"); axes[0].set_ylabel("recovered (%)")
         axes[1].set_title("Window located by h, as a share of x"); axes[1].set_ylabel("median window / n (%)")
@@ -143,8 +139,8 @@ def theorem2():
         t, k = tk
         x = [r["log2n"] for r in rs]
         b, _ = fit_slope(x, [r["s_bar"] for r in rs])
-        axes[0].errorbar(x, [r["s_bar"] for r in rs], yerr=[r["s_ci"] for r in rs], fmt="o-", color=TK[tk], lw=2, capsize=3,
-                         label=f"t={t}, k={k}: slope {b:.2f} (≤ {4 * t - 1})")
+        axes[0].plot(x, [r["s_bar"] for r in rs], "o-", color=TK[tk], lw=2,
+                     label=f"t={t}, k={k}: slope {b:.2f} (≤ {4 * t - 1})")
         axes[0].plot([x[0], x[-1]], [rs[0]["s_bar"], rs[0]["s_bar"] + (4 * t - 1) * (x[-1] - x[0])], ":", color=TK[tk])
         axes[1].plot(x, [r["excess_per_logn"] for r in rs], "o-", color=TK[tk], lw=2, label=f"t={t}, k={k}")
     axes[0].set_title("Average tag s̄ vs log n (dotted: slope 4t−1)"); axes[0].set_ylabel("s̄ = E|Enc(x)| (bits)")

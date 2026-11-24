@@ -390,7 +390,7 @@ This section covers the second part of the project: we implement the worst-case 
 
 \textbf{Inputs and outputs.} The input is a string $\bx\in\{0,1\}^n$ and the parameters $(t,k)$. Bob's string $\by$ is produced by a synthetic channel that applies $t$ random $k$-substring edits (random position, $|\bu|,|\bv|\le k$, random inserted bits). For each run we record the tag length, the size of the confusion ball, whether Bob recovered $\bx$, and the encoding and decoding times.
 
-\textbf{Measurement.} The confusion ball $\C(\bx)$ and Bob's suspects $\B_t(\by)\cap\{0,1\}^n$ are computed exactly by enumeration; randomness enters only through $\bx$ and the edits. Averages are reported with 95\% confidence intervals, success rates with 95\% Wilson intervals, and growth rates as slopes fitted on log--log axes.
+\textbf{Measurement.} The confusion ball $\C(\bx)$ and Bob's suspects $\B_t(\by)\cap\{0,1\}^n$ are computed exactly by enumeration; randomness enters only through $\bx$ and the edits. Growth rates are reported as slopes fitted on log--log axes.
 
 %---------------------------------------------------------------------
 \subsection{Worst-Case Scheme (Theorem~\ref{thm:1})}\label{sec:results}
@@ -422,7 +422,7 @@ def decode(y, (r, a), n):
 \textbf{Results.}
 \begin{figure*}[!t]
 \centering\includegraphics[width=\textwidth]{fig01_thm1_length.png}
-\caption{Theorem~\ref{thm:1}: tag length against $n$. Monte Carlo mean $\pm$95\% CI, sampled maximum, exhaustive maximum over all $\bx$, and the leading term $4t\log n$ (dashed).}
+\caption{Theorem~\ref{thm:1}: tag length against $n$. Monte Carlo mean, sampled maximum, exhaustive maximum over all $\bx$, and the leading term $4t\log n$ (dashed).}
 \label{fig:thm1len}
 \end{figure*}
 
@@ -434,13 +434,13 @@ def decode(y, (r, a), n):
 \toprule
 $t,k$ & $n$ & mean tag & max & $4t\log n$ & $|\C(\bx)|$ & decoded\\
 \midrule
-1,1 & 16 & $12.1\pm0.1$ & 14 & 16.0 & 229 & 200/200\\
-1,1 & 64 & $18.3\pm0.3$ & 20 & 24.0 & 3{,}905 & 150/150\\
-1,1 & 256 & $24.8\pm0.6$ & 26 & 32.0 & 65{,}257 & 50/50\\
-1,2 & 16 & $15.4\pm0.3$ & 16 & 16.0 & 803 & 200/200\\
-1,2 & 64 & $22.4\pm0.5$ & 24 & 24.0 & 18{,}554 & 50/50\\
-2,1 & 8 & $14.4\pm0.3$ & 16 & 24.0 & 221 & 200/200\\
-2,1 & 24 & $26.0\pm0.7$ & 28 & 36.7 & 50{,}930 & 40/40\\
+1,1 & 16 & 12.1 & 14 & 16.0 & 229 & 200/200\\
+1,1 & 64 & 18.3 & 20 & 24.0 & 3{,}905 & 150/150\\
+1,1 & 256 & 24.8 & 26 & 32.0 & 65{,}257 & 50/50\\
+1,2 & 16 & 15.4 & 16 & 16.0 & 803 & 200/200\\
+1,2 & 64 & 22.4 & 24 & 24.0 & 18{,}554 & 50/50\\
+2,1 & 8 & 14.4 & 16 & 24.0 & 221 & 200/200\\
+2,1 & 24 & 26.0 & 28 & 36.7 & 50{,}930 & 40/40\\
 \bottomrule
 \end{tabular}
 \end{table}
