@@ -613,9 +613,21 @@ Both schemes of~\cite{narayanan} were implemented and decoded every test case, a
 
 %=====================================================================
 \section{Extension: Real Version-Control Data}\label{sec:ext}
-\textbf{Question.} Do the edits people actually make fit the model of~\cite{narayanan}, a few ($t$) substring edits of at most $k$ bits each, or do real edit patterns break its assumptions?
+\textbf{Aim.} The schemes assume that Bob's file differs from Alice's by a few ($t$) substring edits, each at most $k$ bits long, with $k$ a small constant. We test whether real edits, taken from the history of a git repository, follow this model.
 
-{\sloppy\textbf{Data and method.} We used the full history (all branches) of one of our own local git repositories, a course project written in Verilog, Python, Makefiles and Markdown. For every non-merge commit and every modified text file we took the file before (parent) and after (commit): 101 file changes in 31 commits, median file 6.6\,KB ($n\approx53{,}000$ bits). Only statistics are recorded (\path{results/ext_*.csv}); no file contents or names. For each change (\path{io/diffs.py}): a line-level then byte-level diff gives the changed regions in bits; $t_{\min}(k)$, the fewest $k$-substring edits turning the old file into the new, is found by dynamic programming over groups of neighbouring regions (a group spanning $s$ bits needs $\lceil s/k\rceil$ edits). A change \emph{fits} $(t,k)$ if $t_{\min}(k)\le t$; one that does not is a model violation, not a decoder failure. We also check the line view of Sec.~\ref{sec:docs}, the density precondition of Theorem~\ref{thm:2}, and run the three schemes on real single-bit edits (\path{experiments/extension_commits.py}).\par}
+\textbf{Data.} We used the full history of one of our own git repositories, a course project with Verilog, Python, Makefile and Markdown files. For every commit and every text file it modified, we took the file before and after the commit. This gives 101 file changes from 31 commits; the median file is 6.6\,KB ($n\approx53{,}000$ bits). Only statistics are saved, not the file contents or names.
+
+\textbf{Methodology.} For each file change (\path{experiments/extension_commits.py}):
+\begin{enumerate}
+\item We compare the old and new file, first line by line and then byte by byte, and record the changed regions in bits.
+\item For each $k$, we compute $t_{\min}(k)$, the fewest edits of at most $k$ bits that turn the old file into the new one. Nearby regions may share one edit; a group of regions spanning $s$ bits needs $\lceil s/k\rceil$ edits.
+\item The change \emph{fits} the model for $(t,k)$ if $t_{\min}(k)\le t$.
+\end{enumerate}
+We also check whether lines are only edited or also added and removed, whether the files are dense (the condition of Theorem~\ref{thm:2}), and we run the three schemes on real single-bit edits.
+
+\textbf{Choices made.} (i) Files are compared as bits, as in the rest of the report. (ii) A change that does not fit is counted as a \emph{model violation}, not as a decoding failure. (iii) Whole files are far too long to encode by enumeration, so for them we \emph{estimate} the worst-case tag as $2\log$ of the ball bound~\eqref{eq:ballbound}. (iv) To run the schemes on real data, we cut 16-bit windows of the old file around isolated single-bit edits.
+
+\textbf{Inputs and outputs.} Input: the path of any local git repository. Output: for every file change, the number and size of the changed regions, $t_{\min}(k)$ for $k=1$ to $4096$ bits, line statistics and density; and the tags and decoding results of the three schemes on the real windows.
 
 \begin{table}[!t]
 \caption{Share of real file changes that fit $t$ edits of $\le k$ bits}\label{tab:fit}
@@ -639,19 +651,18 @@ $k$ (bits) & $t\le1$ & $t\le2$ & $t\le3$ & $t\le5$\\
 \label{fig:fit}
 \end{figure}
 
-\textbf{Findings} (Table~\ref{tab:fit}, Fig.~\ref{fig:fit}).
+\textbf{Results} (Table~\ref{tab:fit}, Fig.~\ref{fig:fit}).
+\begin{itemize}
+\item \emph{Real edits are long.} A typical change has only 4 changed regions, but they cover 3{,}231 bits, and the largest is 1{,}768 bits. No change fits with $k\le4$ bits, and at most 3\% fit with $k\le32$. Even with $k=512$ bits, only 16\% fit with $t\le3$.
+\item \emph{Lines are added, not only edited.} 100 of the 101 changes add or remove whole lines. Of the 375 lines changed in place, only 43 (11\%) are a single edit of at most 8 bits.
+\item \emph{The tag becomes too large.} For changes that fit with $t\le3$, the estimated tag is 966 bits at $k=64$ and 6{,}738 bits at $k=512$, against $4t\log n\approx84$ and $139$. For small files it is larger than the file itself.
+\item \emph{Density holds.} All 101 files are dense for $k=1$ and $k=2$: the longest gap between $0^k1^k$ patterns is at most 11 bits, against $\delta\approx500$.
+\item \emph{Small real edits decode.} On 40 real single-bit edits (all flips), cut as 16-bit windows, all three schemes recovered every window, with tags of 11.9 (Thm.~\ref{thm:1}), 73.0 (Thm.~\ref{thm:2}) and 26.0 bits for~\cite{li21}, the same as on synthetic data.
+\end{itemize}
 
-(1) \emph{Edits are few but long.} A median change touches 4 regions but 3{,}231 bits, and its largest region is 1{,}768 bits. No change fits $k\le4$ for any $t\le5$, and at most 3\% fit $k\le32$; a median change needs $t_{\min}=398$ edits at $k=8$ and $52$ at $k=64$. Even with $k=512$ bits only 16\% fit $t\le3$. The small constant $k$ of the paper is the assumption real data breaks.
+\textbf{Interpretation.} Real edits do have the \emph{form} the model assumes: a few separate changed regions. Their \emph{size} does not match: people add whole lines and blocks of hundreds to thousands of bits, while the model assumes a small $k$. With a large $k$, the constant $k^{2t}3^{2kt}$ in the ball bound dominates and the tag is no longer close to $4t\log n$. The density assumption of Theorem~\ref{thm:2}, on the other hand, holds even though real text is not uniform.
 
-(2) \emph{Lines are added, not just edited.} 100 of the 101 changes add or remove whole lines (97 add), so the one-block-per-line layout of Sec.~\ref{sec:docs}, which needs the number of lines to stay fixed, also breaks. Of the 375 lines that are changed in place, 43 (11\%) are one edit of $\le8$ bits and 103 (27\%) one edit of $\le64$ bits.
-
-(3) \emph{At the $k$ real edits need, the constant dominates.} For changes fitting $t\le3$, the estimated tag has median 966 bits at $k=64$ (against $4t\log n\approx84$) and 6{,}738 bits at $k=512$ (against 139), because of the $3^{2kt}$ factor in~\eqref{eq:ballbound}. On small files it exceeds the file itself.
-
-(4) \emph{Density holds.} All 101 old files are dense for $k=1$ and $k=2$ at the paper's $\delta$: the longest gap between $0^k1^k$ patterns is at most 11 bits for $k=1$ (median 10), against $\delta\approx500$. Real text, though far from uniform, meets the precondition of Theorem~\ref{thm:2}.
-
-(5) \emph{Where an edit is small, the schemes work.} We cut 16-bit windows of the old file around 40 isolated real single-bit edits (all flips) and ran the three schemes with $t=k=1$. All 40 were recovered by every scheme, with tags of 11.9 (Thm.~1), 73.0 (Thm.~2) and 26.0 bits~\cite{li21}, as on synthetic data (Sec.~\ref{sec:compare}).
-
-\textbf{Answer.} The \emph{form} of the model, a few localised substring edits, matches real commits; its \emph{scale} does not. Real edits insert whole lines of hundreds to thousands of bits, so $k$ must be large and the $3^{2kt}$ term outweighs $4t\log n$. Density holds; bounded $k$ breaks.
+\textbf{Conclusion.} Real version-control edits break the small-$k$ assumption of the model, not its density assumption. The schemes work correctly whenever an edit is small, but typical commits need far larger $k$ than the schemes can handle efficiently.
 
 %=====================================================================
 \FloatBarrier
