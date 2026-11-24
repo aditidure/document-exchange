@@ -410,6 +410,7 @@ Experiments (\path{experiments/}), the hand-edited documents (\path{documents/})
 10 & Verification of Theorem~\ref{thm:2} and Lemmas~\ref{lem:dense}--\ref{lem:restricted}, figures (\path{experiments/verify_average_case.py}) & Checks C1--C5 pass (Table~\ref{tab:checks})\\
 11 & Higher-complexity scheme of~\cite{li21}: two-round distributed colouring (\path{schemes/li21.py}) & Proper colouring on all $2^8$ strings; round trips\\
 12 & Binary documents, fixed-size blocks, edit-model check (\path{io/documents.py}, \path{documents/}) & Hand-worked edit counts; block classification\\
+13 & Comparison of the three schemes on synthetic blocks, figures (\path{experiments/compare.py}) & 675/675 decoded; slopes in Fig.~\ref{fig:cost}\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -571,42 +572,46 @@ C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
 \textcolor{red!70!black}{\textbf{[To be completed.]} Results of the worst-case, average-case and higher-complexity schemes on two documents edited by hand: tag length, encoding and decoding time, and decoding success for each scheme.}
 
 \subsection{Comparison of Redundancy and Complexity}\label{sec:compare}
-The scheme of~\cite{li21} attains $4t\log n+O(\log\log n)$ in $O(n^{8t})$/$O(n^{10t})$ time, i.e.\ $2^{48}$ operations per string already at $t=1$, $n=64$; it enters through its published leading term. To obtain a \emph{measured} high-complexity benchmark on the same data we use Proposition~\ref{prop:colour}: (i) a greedy colouring of the whole confusion graph is a valid scheme with redundancy $\lceil\log\chi\rceil$ at exponential cost (decoding verified on 50 random edits per setting), and (ii) every set $\B_t(\by)\cap\{0,1\}^n$ is a clique, so $\lceil\log\max_{\by}|\B_t(\by)\cap\{0,1\}^n|\rceil$ lower-bounds \emph{every} scheme.
+\textbf{Set-up.} \path{experiments/compare.py} runs the three schemes through the common interface on the \emph{same} random strings and the \emph{same} random edits: $t=k=1$, $n=8,10,\dots,16$, $15$ strings per length and $3$ edit patterns per string. It records the tag length, the encoding and decoding time per string, and decoding success (results in \path{results/compare.csv}).
 
 \begin{table}[!t]
-\caption{Redundancy in bits, exact over all $\bx\in\{0,1\}^n$}\label{tab:compare}
+\caption{Three schemes on the same synthetic blocks ($t=k=1$)}\label{tab:compare}
 \centering\footnotesize
-\setlength{\tabcolsep}{2.6pt}
-\begin{tabular}{@{}lrrrrrrr@{}}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}rrrrrrr@{}}
 \toprule
-$t,k$ & $n$ & lower & colour & Thm~1 & Thm~2 & $4t\log n$ & \cite{li21}\\
- & & bound & & max/mean & mean & & lead.\\
+ & \multicolumn{3}{c}{tag length (bits)} & & \multicolumn{2}{c}{\cite{li21}: time per block}\\
+\cmidrule(lr){2-4}\cmidrule(l){6-7}
+$n$ & Thm~\ref{thm:1} & Thm~\ref{thm:2} & \cite{li21} & $4t\log n$ & encode & decode\\
 \midrule
-1,1 & 8 & 4 & 5 & 12/9.7 & 70 & 12.0 & 13.6\\
-1,1 & 12 & 4 & 6 & 12/11.3 & 72 & 14.3 & 16.2\\
-1,1 & 16 & 5 & 7 & 14/12.2 & 73 & 16.0 & 18.0\\
-1,2 & 8 & 4 & 6 & 14/11.7 & 80 & 12.0 & 13.6\\
-1,2 & 12 & 5 & 7 & 16/13.9 & 82 & 14.3 & 16.2\\
-2,1 & 6 & 6 & 6 & 12/11.8 & 69 & 20.7 & 22.0\\
-2,1 & 8 & 7 & 7 & 16/14.3 & 70 & 24.0 & 25.6\\
-2,1 & 10 & 7 & 9 & 18/16.7 & 72 & 26.6 & 28.3\\
+8 & 10.0 & 70 & 21 & 12.0 & 0.9\,ms & 1.0\,ms\\
+10 & 10.1 & 72 & 23 & 13.3 & 4.5\,ms & 6.3\,ms\\
+12 & 11.2 & 72 & 24 & 14.3 & 17\,ms & 30\,ms\\
+14 & 12.1 & 73 & 25 & 15.2 & 47\,ms & 128\,ms\\
+16 & 12.4 & 73 & 26 & 16.0 & 121\,ms & 444\,ms\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{figure*}[!t]
-\centering\includegraphics[width=\textwidth]{fig10_compare_redundancy.png}
-\caption{Redundancy of all schemes on the same synthetic setting. The grey region is below the clique lower bound; \cite{li21} is drawn as $4t\log n+\log\log n$ (its constant is unspecified).}
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig10_compare_redundancy.png}
+\caption{Tag length of the three schemes on the same blocks ($t=k=1$), with the leading term $4t\log n$.}
 \label{fig:compare}
-\end{figure*}
+\end{figure}
 
 \begin{figure}[!t]
 \centering\includegraphics[width=\columnwidth]{fig11_compare_cost.png}
-\caption{Left: measured cost for $t=k=1$. Right: theoretical redundancy against encoding cost at $n=1024$, $t=1$.}
+\caption{Encoding and decoding time per block (log--log) with fitted slopes.}
 \label{fig:cost}
 \end{figure}
 
-Table~\ref{tab:compare} and Fig.~\ref{fig:compare} show that exhaustive colouring needs $\approx\log(\Delta+1)\approx 2t\log n$ bits and meets the lower bound exactly for $t=2$, $n\le8$. Theorem~\ref{thm:1} uses $\approx4t\log n$, i.e.\ 2--2.5 times the colouring (whose redundancy is achievable but not proven optimal: the optimum lies between the lower bound and the colouring), because Alice must send the modulus $a_{\bx}$ as well as the residue; \cite{li21} has the same leading term. What the low-complexity scheme buys is cost (Fig.~\ref{fig:cost}): the colouring must visit all $2^n$ strings (about 40\,s at $n=16$, roughly doubling with each extra bit), whereas Theorem~\ref{thm:1} needs 0.4\,ms for the one string being sent. At $n=1024$, $t=1$ the trade-off is $\approx20$ bits for $\sim10^{308}$ operations (colouring), $\approx43$ bits for $\sim10^{24}$~\cite{li21}, and $\approx40$ bits for $\sim10^{9}$ (Theorem~\ref{thm:1}).
+\textbf{Results.} All $675$ decodings succeeded (Table~\ref{tab:compare}, Figs.~\ref{fig:compare},~\ref{fig:cost}).
+\begin{itemize}
+\item \emph{Redundancy.} At every block length the order is Theorem~\ref{thm:1} ($10$--$12$ bits, below $4t\log n$) $<$ scheme~\cite{li21} ($21$--$26$ bits) $<$ Theorem~\ref{thm:2} ($70$--$73$ bits).
+\item \emph{Complexity.} The fitted slopes of encoding time against $n$ are $2.0$ (Theorem~\ref{thm:1}), $2.4$ (Theorem~\ref{thm:2}) and $7.1$ (\cite{li21}); for decoding they are $1.2$, $1.1$ and $8.8$. The low-complexity schemes stay within their exponents $2t+1=3$ and $t+1=2$, and scheme~\cite{li21} grows as predicted by its $O(n^{8t})$ and $O(n^{10t})$ bounds. At $n=16$ scheme~\cite{li21} takes about $200$ times longer to encode and about $20{,}000$ times longer to decode than Theorem~\ref{thm:1}.
+\end{itemize}
+
+\textbf{Why.} \emph{Scheme~\cite{li21}} has redundancy $2\log\Delta+O(\log\log n)$, the same leading term $4t\log n$ as Theorem~\ref{thm:1}, but its hidden term is large at small $n$: the field size must exceed $\Delta b$ with $b=n$ in round~1 and $b=\lceil\log Q_1^2\rceil$ in round~2, which adds about $2\log b$ bits on top of $2\log\Delta$. Its cost comes from locality: the colour of $\bx$ needs the round-1 colours of all $\Delta$ neighbours, and each of those needs that neighbour's own confusion ball, i.e.\ about $\Delta^2=O(n^{4t})$ ball enumerations, and decoding repeats this for every suspect. \emph{Theorem~\ref{thm:1}} sends $(r,a)$ with $a$ much smaller than $|\C(\bx)|$ in practice (e.g.\ $a\approx4{,}000$ against $|\C(\bx)|\approx65{,}000$ at $n=256$), so it stays below $4t\log n$ and needs only one confusion ball. \emph{Theorem~\ref{thm:2}} pays a fixed $\approx70$ bits for $h$ and $\psi$, which makes $(r,a)$ only $3$ bits but dominates at every block length we can run (Sec.~\ref{sec:results}, Fig.~\ref{fig:breakeven}). Asymptotically the picture changes: scheme~\cite{li21} has the smaller remainder ($O(\log\log n)$ against $o(\log n)$), and Theorem~\ref{thm:2} has the smaller leading term ($(4t-1)\log n$), but at the sizes where all three can be run, the low-complexity worst-case scheme is the shortest and by far the fastest.
 
 %=====================================================================
 \section{Extension: Real Version-Control Data}\label{sec:ext}

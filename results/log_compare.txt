@@ -1,0 +1,16 @@
+Comparison on synthetic data (t = 1, k = 1)
+  n= 8 worst-case (Thm 1)        : bits  10.0 (max 10) | enc     0.17 ms | dec     0.01 ms | decoded 45/45
+  n= 8 average-case (Thm 2)      : bits  70.0 (max 70) | enc     0.47 ms | dec     0.08 ms | decoded 45/45
+  n= 8 distributed colouring [7] : bits  21.0 (max 21) | enc     0.90 ms | dec     1.01 ms | decoded 45/45
+  n=10 worst-case (Thm 1)        : bits  10.1 (max 12) | enc     0.24 ms | dec     0.01 ms | decoded 45/45
+  n=10 average-case (Thm 2)      : bits  72.0 (max 72) | enc     0.78 ms | dec     0.11 ms | decoded 45/45
+  n=10 distributed colouring [7] : bits  23.0 (max 23) | enc     4.50 ms | dec     6.29 ms | decoded 45/45
+  n=12 worst-case (Thm 1)        : bits  11.2 (max 12) | enc     0.35 ms | dec     0.01 ms | decoded 45/45
+  n=12 average-case (Thm 2)      : bits  72.0 (max 72) | enc     1.30 ms | dec     0.11 ms | decoded 45/45
+  n=12 distributed colouring [7] : bits  24.0 (max 24) | enc    17.05 ms | dec    29.98 ms | decoded 45/45
+  n=14 worst-case (Thm 1)        : bits  12.1 (max 14) | enc     0.58 ms | dec     0.02 ms | decoded 45/45
+  n=14 average-case (Thm 2)      : bits  73.0 (max 73) | enc     1.84 ms | dec     0.14 ms | decoded 45/45
+  n=14 distributed colouring [7] : bits  25.0 (max 25) | enc    47.09 ms | dec   127.58 ms | decoded 45/45
+  n=16 worst-case (Thm 1)        : bits  12.4 (max 14) | enc     0.60 ms | dec     0.02 ms | decoded 45/45
+  n=16 average-case (Thm 2)      : bits  73.0 (max 73) | enc     2.43 ms | dec     0.19 ms | decoded 45/45
+  n=16 distributed colouring [7] : bits  26.0 (max 26) | enc   121.13 ms | dec   443.64 ms | decoded 45/45

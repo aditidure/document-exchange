@@ -203,7 +203,42 @@ def theorem2():
     save(fig, "fig09_thm2_break_even.png")
 
 
-FIGS = [theorem1, theorem2]
+# ================================================================ comparison (synthetic data)
+SCHEME_COLOUR = {"worst-case (Thm 1)": C1, "average-case (Thm 2)": C2, "distributed colouring [7]": C5}
+
+
+def comparison():
+    if not have("compare.csv"):
+        return
+    groups = {}
+    for r in read_csv("compare.csv"):
+        groups.setdefault(r["scheme"], []).append(r)
+
+    fig, ax = plt.subplots(figsize=(6.6, 4.4))
+    ns = sorted({r["n"] for rs in groups.values() for r in rs})
+    ax.plot(ns, [4 * math.log2(n) for n in ns], "--", color=INK2, lw=1.4, label="4t·log n")
+    for name, rs in groups.items():
+        ax.plot([r["n"] for r in rs], [r["bits_mean"] for r in rs], "o-", color=SCHEME_COLOUR.get(name, INK), lw=2, ms=6,
+                label=name)
+    ax.set_xlabel("n (bits per block)"); ax.set_ylabel("tag length (bits)")
+    ax.set_title("Redundancy of the three schemes (t = k = 1)")
+    ax.legend(loc="center right")
+    save(fig, "fig10_compare_redundancy.png")
+
+    fig, axes = plt.subplots(2, 1, figsize=(6.4, 7.6))
+    for ax, key, title in ((axes[0], "enc_s", "Encoding time per block"), (axes[1], "dec_s", "Decoding time per block")):
+        for name, rs in groups.items():
+            xs = [r["n"] for r in rs]
+            b, _ = fit_slope([math.log2(x) for x in xs], [math.log2(max(r[key], 1e-7)) for r in rs])
+            ax.loglog(xs, [r[key] * 1e3 for r in rs], "o-", color=SCHEME_COLOUR.get(name, INK), lw=2,
+                      label=f"{name}: slope {b:.1f}")
+        ax.set_title(title); ax.set_xlabel("n (bits per block)"); ax.set_ylabel("milliseconds")
+        ax.set_xticks(ns, [str(int(n)) for n in ns]); ax.minorticks_off()
+        ax.legend(fontsize=8)
+    save(fig, "fig11_compare_cost.png")
+
+
+FIGS = [theorem1, theorem2, comparison]
 
 if __name__ == "__main__":
     for f in FIGS:
