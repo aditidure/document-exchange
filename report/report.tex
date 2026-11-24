@@ -407,6 +407,7 @@ Experiments (\path{experiments/}), the hand-edited documents (\path{documents/})
 7 & Hash $h$ and localisation (\path{schemes/average_case/hash_h.py}) & Edit always inside the located window\\
 8 & Side information $\psi$ and the one-edit decoder (\path{schemes/average_case/psi.py}) & One edit recovered at $n=2^{13}$; never a wrong output\\
 9 & Average-case scheme: restricted ball, encoder, decoder (\path{schemes/average_case/scheme.py}) & Both branches decode; survivors $\subseteq\Ct(\bx)$\\
+10 & Verification of Theorem~\ref{thm:2} and Lemmas~\ref{lem:dense}--\ref{lem:restricted}, figures (\path{experiments/verify_average_case.py}) & Checks C1--C5 pass (Table~\ref{tab:checks})\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -477,7 +478,7 @@ Lemma~\ref{lem:ball} is confirmed (Fig.~\ref{fig:ball}): fitted slopes of $\log|
 
 \textbf{Inputs.} As for the worst case, plus $\delta$ (default: the paper's value, capped at $n$) and the block length $L$.
 
-\textbf{Verification strategy.} A bound ``leading term $+\,o(\log n)$'' cannot be checked at one $n$. We therefore test (a) the slope of the average tag length against $\log n$ ($\le 4t-1$); (b) that (length $-$ leading term)$/\log n$ decreases; and (c) each ingredient against its own lemma: density (Lemma~\ref{lem:dense}), one-edit recovery (Lemma~\ref{lem:onecode}) and the size of $\Ct(\bx)$ (Lemma~\ref{lem:restricted}).
+\textbf{Verification strategy.} A bound ``leading term $+\,o(\log n)$'' cannot be checked at one $n$. We therefore test (a) the slope of the average tag length against $\log n$ ($\le 4t-1$); (b) that (length $-$ leading term)$/\log n$ decreases; and (c) each ingredient against its own lemma: density (Lemma~\ref{lem:dense}), one-edit recovery (Lemma~\ref{lem:onecode}) and the size of $\Ct(\bx)$ (Lemma~\ref{lem:restricted}). The experiment is \path{experiments/verify_average_case.py}; it writes \path{results/lemma4_density.csv}, \path{results/lemma5_one_edit.csv} and \path{results/average_case_mc.csv}, from which Figs.~\ref{fig:dense}--\ref{fig:breakeven} are drawn.
 
 \textbf{Results.} \begin{figure}[!t]
 \centering\includegraphics[width=\columnwidth]{fig04_lemma4_density.png}
