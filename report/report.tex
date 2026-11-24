@@ -1,0 +1,649 @@
+\documentclass[journal,10pt]{IEEEtran}
+
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{cite}
+\usepackage{xcolor}
+\newcommand{\FloatBarrier}{\clearpage}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{figures/}}
+
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+
+% ---- "Likely to be confused" notes: red star in the text, clarification at the bottom of the column ----
+\newcounter{confuse}
+\newcommand{\confuse}[1]{%
+  \stepcounter{confuse}\textsuperscript{\textcolor{red!70!black}{$\bigstar$\theconfuse}}%
+  \begingroup\renewcommand{\thefootnote}{}%
+  \footnotetext{\textcolor{red!70!black}{$\bigstar$\theconfuse}\ \textbf{Likely to be confused.} #1}%
+  \endgroup}
+
+% ---- breathing space for mathematics ----
+\usepackage{etoolbox}
+\AtBeginEnvironment{definition}{\medskip}\AfterEndEnvironment{definition}{\medskip}
+\AtBeginEnvironment{lemma}{\medskip}\AfterEndEnvironment{lemma}{\smallskip}
+\AtBeginEnvironment{theorem}{\medskip}\AfterEndEnvironment{theorem}{\smallskip}
+\AtBeginEnvironment{proposition}{\medskip}\AfterEndEnvironment{proposition}{\smallskip}
+\AtBeginEnvironment{remark}{\medskip}\AfterEndEnvironment{remark}{\medskip}
+\AfterEndEnvironment{IEEEproof}{\medskip}
+\setlength{\jot}{4pt}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\arraystretch}{1.15}
+\newcommand{\step}[1]{\par\smallskip\noindent\emph{#1}\enspace}
+
+\newcommand{\Enc}{\mathrm{Enc}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\Ct}{\widetilde{\mathcal{C}}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bz}{\mathbf{z}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\bp}{\mathbf{p}}
+
+\begin{document}
+
+\title{Codes for Document Exchange under Multiple Substring Edits:\\ Theory, Implementation and a Real-Data Study}
+
+\author{Aditi~Dure~(EE23BTECH11016) and Aashna~Sahu~(EE23BTECH11001)%
+\thanks{EE5350 Error Correcting Codes, Course Project~12. Reference paper: H.~Narayanan, V.~Ramkumar, R.~Bitar, A.~Wachter-Zeh, ``Coding schemes for document exchange under multiple substring edits,'' arXiv:2601.18441~\cite{narayanan}.}}
+
+\markboth{EE5350 Course Project Report}{Dure and Sahu: Document Exchange under Multiple Substring Edits}
+
+\maketitle
+
+\begin{abstract}
+In document exchange, Alice holds a binary string $\bx$ of length $n$ and Bob holds a copy $\by$ that differs from $\bx$ by at most $t$ $k$-substring edits; Alice sends a short tag that lets Bob recover $\bx$ exactly. We study the two schemes of Narayanan \emph{et al.}: a low-complexity worst-case scheme with redundancy $4t\log n+o(\log n)$ and an average-case scheme with expected redundancy $(4t-1)\log n+o(\log n)$ for uniform strings. We reproduce the derivation of the worst-case bound, implement both schemes in full, and verify their encoding lengths by Monte Carlo simulation and exhaustive enumeration. All 3{,}695 decoding trials (739 encoded strings, each tested against several random edit patterns) succeed; the confusion ball grows as $n^{2t}$ (fitted slope $2.04$ for $t=1$); and the average-case length satisfies its bound in the form it is stated (leading slope $2.3\le 3$, remainder $o(\log n)$). We find that $4t\log n$ is a leading term rather than a hard cap ($k=2$, $n\le 12$ exceed it by up to two bits), and that the average-case scheme only beats the worst-case scheme for $n\gtrsim 2^{108}$ because of the constant cost of its side information. Comparing against an exhaustive (exponential-time) colouring of the confusion graph and a clique lower bound, the low-complexity scheme pays 2--2.5 times the redundancy of the exponential-time colouring in exchange for polynomial complexity. Finally, on 480 real commits from four GitHub repositories, only 1\% fit the small-$k$ model with $t\le 3$, although real text always satisfies the density condition of the average-case scheme.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Document exchange, substring edits, syndrome compression, confusion ball, systematic codes, average-case redundancy.
+\end{IEEEkeywords}
+
+%=====================================================================
+\section{Introduction}
+\IEEEPARstart{T}{wo} parties hold slightly different versions of a file: a laptop and a server after an edit, or a local and a remote repository after a commit. Sending the whole file is wasteful, and sending a diff is impossible because Alice does not know Bob's version. \emph{Document exchange} asks for the shortest message $\Enc(\bx)$ that lets Bob rebuild Alice's $\bx$ from his own $\by$~\cite{orlitsky,cormode}. It is equivalent to designing a \emph{systematic} code\confuse{The ``systematic code'' view is an \emph{analogy}, not the actual setting. In a classical code, a sender transmits $(\bx,\text{parity})$ over a noisy channel that corrupts it. Here nobody transmits $\bx$: Alice and Bob \emph{already} hold $\bx$ and $\by$. To borrow the coding view, picture Bob's $\by$ as ``$\bx$ after a channel''; the ``corruption'' is really the \emph{version difference} between the two files (edits made over time), not channel noise. The only data actually sent is $\Enc(\bx)$, which plays the role of the parity and travels over an \emph{error-free} link. Hence the redundancy is $|\Enc(\bx)|$, and the code must correct edits in $\bx$ given an uncorrupted parity.} whose codeword is $(\bx,\Enc(\bx))$ and whose errors hit only $\bx$.
+
+The \emph{$k$-substring edit} model~\cite{tang} replaces a substring of at most $k$ bits by another of at most $k$ bits; it covers bursts and localised insertions and deletions within a $k$-bit window. For $t$ such edits, Narayanan \emph{et al.}~\cite{narayanan} give (i) a worst-case scheme with redundancy $4t\log n+o(\log n)$ and complexity $O(n^{2t+1})$ (encoding) and $O(n^{t+1})$ (decoding), with the same leading term $4t\log n$ as the distributed-colouring scheme of~\cite{li21} (whose lower-order term, $O(\log\log n)$, is smaller) at far lower complexity, and (ii) an average-case scheme with expected redundancy $(4t-1)\log n+o(\log n)$.
+
+\textbf{Contributions and organisation.} The report follows the three deliverables of the project brief.
+
+\emph{Theory.} (A) We give the problem setting and the problem statement, with the definitions used. (B) We derive Theorem~1 and Theorem~2: the redundancy, encoding complexity and decoding complexity of the document exchange scheme in the worst case and in the average case, together with the lemmas needed for the derivation, some of which are used as black boxes.
+
+\emph{Implementation.} (A) We implement (1) the worst-case scheme and (2) the average-case scheme; for each we describe the functions and their hierarchy, every decision that differs from the paper, the inputs, and the verification strategy, and we verify both theorems with the resulting experiments. (B) We implement the higher-complexity scheme of~\cite{li21}, which the project brief asks for as a comparison point. (C) We run the low-complexity schemes (worst case and average case separately) and the higher-complexity scheme on two hand-edited documents. (D) We compare redundancy and complexity, and explain what happens and why.
+
+\emph{Extension.} We test the schemes on real version-control data, namely commits made to a GitHub repository, rather than synthetic edits, to check whether the multiple-substring-edit model matches the edits that occur in practice or whether real edit patterns break its assumptions.
+All logarithms are base~2.
+
+%=====================================================================
+\section{Theory}\label{sec:theorypart}
+\subsection{Problem Setting and Problem Statement}
+\textbf{Setting.} Alice holds $\bx\in\{0,1\}^n$; Bob holds $\by$, obtained from $\bx$ by at most $t$ $k$-substring edits\confuse{``$\by$ is obtained from $\bx$'' does not mean that the edits happened on Bob's side. $\bx$ and $\by$ are two \emph{versions} of the same document that are at most $t$ $k$-substring edits apart: Bob may have edited his old copy, or Alice may have updated hers (e.g.\ Alice pushed a new commit and Bob still holds the previous one). The direction does not matter, because every edit $\bu\to\bv$ can be undone by the edit $\bv\to\bu$, so $\by\in\B_t(\bx)$ if and only if $\bx\in\B_t(\by)$. What is fixed is the role: the party holding $\bx$ is the one whose version must be reconstructed, and it sends $\Enc(\bx)$.}, so $\by$ may have a different length. Alice sends a message $\Enc(\bx)$ over an error-free link, and Bob outputs $\hat\bx=D(\by,\Enc(\bx))$.
+
+\textbf{Problem statement.} Design $\Enc$ and $D$ such that (i) $\hat\bx=\bx$ for every $\bx$ and every $\by\in\B_t(\bx)$ (zero error, no randomness), (ii) the redundancy $|\Enc(\bx)|$ is as small as possible, in the worst case over $\bx$ or on average over uniform $\bx$, and (iii) encoding and decoding run in polynomial time. The definitions used throughout are the following.
+
+\begin{definition}[$k$-substring edit, edit ball]
+A $k$-substring edit deletes a substring $\bu$ of $\bx$ with $|\bu|\le k$ and inserts $\bv$ with $|\bv|\le k$ at the same position. $\B_t(\bx)$ is the set of strings reachable from $\bx$ by at most $t$ such edits.
+\end{definition}
+One $k$-substring edit is at most $2k$ single-bit insertions, deletions or substitutions\confuse{IDS edits include substitutions, so $2k$ is a \emph{loose} upper limit: substituting the overlapping $\min(|\bu|,|\bv|)$ bits and inserting or deleting the rest needs only $\max(|\bu|,|\bv|)\le k$ IDS edits. The paper counts deletions and insertions only, giving $2k$ (so $\tau=2tk$ in Lemma~\ref{lem:label}). This is still valid, since a labeling function for $2tk$ edits also separates strings $tk$ edits apart, and the label length enters the tag only through $\log R$, so the $4t\log n$ term is unaffected.}, so $t$ edits are at most $2tk$ of them.
+
+\begin{definition}[Confusion ball]
+$\bx,\bx'\in\{0,1\}^n$ are \emph{confusable} if $\B_t(\bx)\cap\B_t(\bx')\neq\emptyset$. The confusion ball of $\bx$ is
+\[
+\C_t(\bx)=\bigl\{\bx'\in\{0,1\}^n:\ \B_t(\bx)\cap\B_t(\bx')\neq\emptyset\bigr\}.
+\]
+\end{definition}
+
+Since an edit $\bu\to\bv$ is undone by the edit $\bv\to\bu$, a common descendant of $\bx$ and $\bx'$ yields a path of at most $2t$ edits between them, and conversely the midpoint of such a path is a common descendant. Hence
+\begin{equation}\label{eq:identity}
+\C_t(\bx)=\B_{2t}(\bx)\cap\{0,1\}^n .
+\end{equation}
+
+\begin{definition}[Document exchange]
+$\Enc:\{0,1\}^n\to\{0,1\}^s$ is valid if $\bx$ is uniquely determined by $(\by,\Enc(\bx))$ for every $\by\in\B_t(\bx)$; $s$ is its redundancy. In the average-case version, $\{0,1\}^n$ is partitioned into $P_1,\dots,P_r$ with encoders $\Enc_j$ of lengths $s_j$, Bob also learns $j$, and the average redundancy for uniform $\bx$\confuse{``Uniform $\bx$'' means every $n$-bit string is equally likely (probability $2^{-n}$), i.e.\ each bit is an independent fair coin. $\bar s$ is then the plain average of $|\Enc(\bx)|$ over all $2^n$ strings. Lemma~\ref{lem:dense} relies on it (a $2k$-bit block equals $0^k1^k$ with probability $2^{-2k}$, independently of other blocks). Real text is \emph{not} uniform, so the result does not transfer automatically; Sec.~\ref{sec:ext} checks density on real files directly.} is
+\[
+\bar s=\frac{1}{2^n}\sum_{j=1}^{r}|P_j|\,s_j .
+\]
+Here the normalisation is by $2^n$, the number of strings.\footnote{The reference paper writes ``$/n$''; the normalisation must be $2^n$.}
+\end{definition}
+
+\begin{proposition}[Validity $\Leftrightarrow$ separation]\label{prop:colour}
+$\Enc$ is valid iff $\Enc(\bx)\neq\Enc(\bx')$ for all distinct confusable $\bx,\bx'$; i.e.\ iff $\Enc$ is a proper colouring of the \emph{confusion graph} on $\{0,1\}^n$.
+\end{proposition}
+\begin{IEEEproof}
+If confusable $\bx\neq\bx'$ share a tag, Bob holding a common descendant cannot distinguish them. Conversely, Bob's candidate set $S=\{\hat\bx:\by\in\B_t(\hat\bx)\}$ contains $\bx$, and its members share $\by$, so they are pairwise confusable and carry distinct tags; exactly one carries $\Enc(\bx)$.
+\end{IEEEproof}
+
+%=====================================================================
+\subsection{Derivation of Theorems~1 and~2}
+This subsection derives the redundancy, encoding complexity and decoding complexity of the two schemes of~\cite{narayanan}: Theorem~\ref{thm:1} for the worst case and Theorem~\ref{thm:2} for the average case. Lemmas~\ref{lem:label} and~\ref{lem:onecode} are taken from~\cite{sima_del} and~\cite{li22} and used as black boxes; all other lemmas are proved.
+
+\subsubsection{Worst case (Theorem~1)}\label{sec:theory}
+The scheme sends
+\[
+\Enc(\bx)=\bigl(f(\bx)\bmod a_{\bx},\ a_{\bx}\bigr).
+\]
+A labeling function $f$ separates confusable strings (Lemma~\ref{lem:label}); syndrome compression shrinks the label to a residue modulo a small $a_{\bx}$ (Lemma~\ref{lem:sc}); and $\log a_{\bx}\approx\log|\C(\bx)|\approx 2t\log n$ (Lemma~\ref{lem:ball}).
+
+\begin{lemma}[Syndrome compression~\cite{sima_sc}]\label{lem:sc}
+Let $f:\{0,1\}^n\to\{0,1\}^R$ satisfy
+\begin{enumerate}
+\item[(1)] $f(\mathbf c)\neq f(\mathbf c')$ for every $\mathbf c'\in\C(\mathbf c)\setminus\{\mathbf c\}$, and
+\item[(2)] $R=O(\log n\,\log\log n)$.
+\end{enumerate}
+Then for every $\bx$ there is an integer $a_{\bx}$ with
+\[
+a_{\bx}\le 2^{\log|\C(\bx)|+o(\log n)}
+\]
+such that
+\[
+f(\bx)\not\equiv f(\by)\pmod{a_{\bx}}\quad\text{for all }\by\in\C(\bx)\setminus\{\bx\}.
+\]
+\end{lemma}
+\begin{IEEEproof}
+Fix $\bx$ and let $N(\bx)=\C(\bx)\setminus\{\bx\}$ and $M=|N(\bx)|$. Labels are read as integers in $\{0,1,\dots,2^R-1\}$.
+
+\step{Differences.} For $\by\in N(\bx)$ let $d_{\by}=f(\bx)-f(\by)$. By property~(1), $d_{\by}\neq0$, and since both labels lie in $\{0,\dots,2^R-1\}$,
+\[
+0<|d_{\by}|\le 2^R-1<2^R .
+\]
+
+\step{When a modulus fails.} Write $f(\bx)=p_1a+q_1$ and $f(\by)=p_2a+q_2$ with $0\le q_1,q_2<a$. Then $d_{\by}=(p_1-p_2)a+(q_1-q_2)$, so
+\[
+f(\bx)\equiv f(\by)\pmod a\iff q_1=q_2\iff a\mid d_{\by}.
+\]
+Hence $a$ is a valid modulus if and only if it divides none of the $d_{\by}$.
+
+\step{Few bad primes.} If $d_{\by}$ has $m$ distinct prime factors $q_1,\dots,q_m$, then, since every prime is at least $2$,
+\[
+2^m\le q_1q_2\cdots q_m\le|d_{\by}|<2^R,
+\]
+so $m\le R-1$. Let $B$ be the set of primes dividing at least one $d_{\by}$. By the union bound, $|B|\le M(R-1)<MR=:K$. Among the first $K$ primes there are $K$ distinct primes but fewer than $K$ elements of $B$, so at least one of them, say $p$, lies outside $B$; it is a valid modulus.
+
+\step{Size of the modulus.} Let $p_K$ denote the $K$-th prime. Rosser's bound gives $p_K<K(\ln K+\ln\ln K)$ for $K\ge6$ (and $p_K\le11$ for $K<6$). Since $\ln\ln K<\ln K$, the smallest valid modulus satisfies
+\[
+a_{\bx}\le p\le p_K<2K\ln K=2MR\ln(MR).
+\]
+Taking logarithms,
+\[
+\log a_{\bx}\le\log M+\log R+\log\ln(MR)+1 .
+\]
+
+\step{Asymptotics.} Three terms remain. (i) $M\le|\C(\bx)|$, so $\log M\le\log|\C(\bx)|$. (ii) $R\le c\log n\log\log n$ gives $\log R\le\log c+\log\log n+\log\log\log n=O(\log\log n)$. (iii) By Lemma~\ref{lem:ball}, $M=O(n^{2t})$, and $R\le n$ for large $n$, so $MR=O(n^{2t+1})$, $\ln(MR)=O(\log n)$ and $\log\ln(MR)=O(\log\log n)$. Therefore
+\[
+\log a_{\bx}\le\log|\C(\bx)|+O(\log\log n)=\log|\C(\bx)|+o(\log n),
+\]
+because $\log\log n/\log n\to0$. Exponentiating gives the claim.
+\end{IEEEproof}
+
+\begin{lemma}[Labeling function~\cite{sima_del}; used as a black box]\label{lem:label}
+For every constant $\tau$ there is an $f:\{0,1\}^n\to\{0,1\}^R$ with
+\[
+R\le\bigl[(\tau^2+1)(2\tau^2+1)+2\tau^2(\tau-1)\bigr]\log n+o(\log n)
+\]
+such that $f(\mathbf c)\neq f(\mathbf c')$ whenever $\mathbf c'\in\C^{\mathrm{IDS}}_\tau(\mathbf c)\setminus\{\mathbf c\}$.
+\end{lemma}
+\emph{Extracts used.} The construction of~\cite{sima_del} is not reproduced; we use only the following properties.
+\begin{enumerate}
+\item[(E1)] \emph{Separation:} $f$ separates every pair of strings within $\tau$ insertions, deletions or substitutions (the IDS confusion ball).
+\item[(E2)] \emph{Length:} $R$ obeys the bound above; for constant $\tau$ it is $O(\log n)$, which satisfies property~(2) of Lemma~\ref{lem:sc}.
+\item[(E3)] \emph{Cost:} $f$ is computable in $O(n)$ time.
+\item[(E4)] \emph{Model:} the construction is stated for $\tau$ IDS edits; since $t$ $k$-substring edits are at most $2tk$ IDS edits, $\C_t(\mathbf c)\subseteq\C^{\mathrm{IDS}}_{2tk}(\mathbf c)$ and $\tau=2tk$ gives a labeling function for our model.
+\end{enumerate}
+
+\begin{lemma}[Size of the confusion ball]\label{lem:ball}
+For constant $t$ and $k$,
+\[
+|\C_t(\bx)|=O(n^{2t}).
+\]
+\end{lemma}
+\begin{IEEEproof}
+\emph{Reduction to an edit ball.}\enspace If $\by\in\C_t(\bx)$, there is a $\bz$ with $\bx\xrightarrow{\ \le t\ }\bz\xleftarrow{\ \le t\ }\by$. Reversing the edits from $\by$ to $\bz$ gives a path of at most $2t$ edits from $\bx$ to $\by$, so $\C_t(\bx)\subseteq\B_{2t}(\bx)$, as in~\eqref{eq:identity}.
+
+\step{One edit.} A $k$-substring edit of a string of length $m$ is fixed by three choices: the position ($\le m+1$ choices), the length of the deleted block $\bu$ ($0,1,\dots,k$: $k+1$ choices) and the inserted block $\bv$ ($2^0+2^1+\dots+2^k=2^{k+1}-1$ choices). Hence
+\[
+|\B_1(\bz)|\le(m+1)(k+1)(2^{k+1}-1)=O(m)\quad\text{for fixed }k.
+\]
+
+\step{$2t$ edits.} Each edit changes the length by at most $k$, so the $i$-th edit acts on a string of length at most $n+(i-1)k$. Multiplying the counts of the $2t$ edits,
+\[
+|\B_{2t}(\bx)|\le\prod_{i=1}^{2t}\bigl(n+(i-1)k+1\bigr)(k+1)(2^{k+1}-1)=O(n^{2t}).
+\]
+The reference paper states the equivalent bound
+\begin{equation}\label{eq:ballbound}
+|\B_{2t}(\bx)|\;\le\;\prod_{i=0}^{2t}(n+ik)\cdot k^{2t}\,3^{2kt}\;=\;O(n^{2t}),
+\end{equation}
+which we use for numerical estimates. Combining with the reduction, $|\C_t(\bx)|=O(n^{2t})$.
+\end{IEEEproof}
+The constant grows exponentially in $k$; this matters in Secs.~\ref{sec:results} and~\ref{sec:ext}.
+
+\begin{theorem}[Worst-case scheme~\cite{narayanan}]\label{thm:1}
+$\Enc(\bx)=(f(\bx)\bmod a_{\bx},\,a_{\bx})$ is a valid document exchange scheme with
+\begin{align*}
+\text{redundancy:}\quad & 4t\log n+o(\log n),\\
+\text{encoding:}\quad & O(n^{2t+1}),\\
+\text{decoding:}\quad & O(n^{t+1}).
+\end{align*}
+\end{theorem}
+\begin{IEEEproof}
+\emph{Correctness.}\enspace Bob lists $S=\B_t(\by)\cap\{0,1\}^n$. Since edits are reversible and $\by\in\B_t(\bx)$, $\bx\in S$. Every $\bz\in S$ reaches $\by$ in at most $t$ edits, as does $\bx$, so $\bz$ and $\bx$ are confusable: $S\subseteq\C(\bx)$. By the choice of $a_{\bx}$, $f(\bz)\not\equiv f(\bx)\pmod{a_{\bx}}$ for every $\bz\in S\setminus\{\bx\}$, so $\bx$ is the unique element of $S$ with $f(\bz)\bmod a_{\bx}=r$.
+
+\step{Redundancy.} The tag consists of $a_{\bx}$, which needs $\lceil\log a_{\bx}\rceil$ bits, and $r=f(\bx)\bmod a_{\bx}<a_{\bx}$, which needs at most as many. So $|\Enc(\bx)|\le 2\log a_{\bx}+O(1)$. By Lemmas~\ref{lem:sc} and~\ref{lem:ball},
+\begin{align*}
+\log a_{\bx}&\le\log|\C(\bx)|+o(\log n)\\
+&\le\log\bigl(c\,n^{2t}\bigr)+o(\log n)=2t\log n+o(\log n),
+\end{align*}
+hence $|\Enc(\bx)|\le 4t\log n+o(\log n)$.
+
+\step{Decoding complexity.} $|\B_t(\by)|=O(n^t)$ (Lemma~\ref{lem:ball} with $t$ edits), and for each candidate Bob computes its label in $O(n)$ (E3) and one residue. Total: $O(n^{t+1})$.
+
+\step{Encoding complexity.} Alice lists $\C(\bx)$, $O(n^{2t})$ strings (Lemma~\ref{lem:ball}), and labels each in $O(n)$, i.e.\ $O(n^{2t+1})$. Following~\cite{narayanan}, $a_{\bx}$ is searched in parallel with the labelling (start at $a=2$ and increase $a$ at each collision), giving $O(n^{2t+1})$ in total; see the remark below on this step.
+\end{IEEEproof}
+
+The ``no extra cost'' search for $a_{\bx}$ in~\cite{narayanan} needs care: when $a$ is increased after a collision, the neighbours already checked must be re-checked against the new $a$. Our implementation re-checks every neighbour for each candidate modulus.
+
+\subsubsection{Average case (Theorem~2)}\label{sec:avg}
+\begin{definition}[Pattern-dense]
+For a pattern $\bp$ of length $\ell=|\bp|$, a string $\bx$ is $(\bp,\delta)$-dense if every length-$\delta$ substring of $\bx$ contains $\bp$. The scheme uses $\bp=0^k1^k$ (so $\ell=2k$) and
+\[
+\delta=\alpha\log n,\qquad\alpha=k\,2^{2k+3}.
+\]
+\end{definition}
+
+\begin{lemma}[Dense strings are typical]\label{lem:dense}
+Let $\bx$ be uniform on $\{0,1\}^n$ and $\delta=\alpha\log n$. For any pattern of constant length $\ell$,
+\begin{align*}
+\Pr[\bx\text{ not dense}]&\le(n-\delta+1)\bigl(1-2^{-\ell}\bigr)^{\lfloor\delta/\ell\rfloor}\\
+&=O\!\left(n^{-\left(\frac{\alpha}{\ell 2^{\ell}}-1\right)}\right).
+\end{align*}
+For $\bp=0^k1^k$ and $\alpha=k2^{2k+3}$ this is $O(n^{-3})$.
+\end{lemma}
+\begin{IEEEproof}
+\emph{Union bound.}\enspace There are $n-\delta+1$ windows $W_i$ of length $\delta$. Let $E_i$ be the event that $W_i$ does not contain $\bp$. Then $\{\bx\text{ not dense}\}=\bigcup_iE_i$, and
+\[
+\Pr[\bx\text{ not dense}]\le\sum_{i=1}^{n-\delta+1}\Pr[E_i]=(n-\delta+1)\Pr[E_1],
+\]
+since $\bx$ is uniform and every window has the same distribution.
+
+\step{Disjoint blocks.} Split $W_1$ into $\lfloor\delta/\ell\rfloor$ disjoint blocks of length $\ell$. If $W_1$ misses $\bp$, then in particular no block equals $\bp$ (occurrences of $\bp$ that straddle two blocks are simply dropped), so $\Pr[E_1]\le\Pr[\text{no block equals }\bp]$. The blocks use disjoint bits, hence are independent, and each equals $\bp$ with probability $2^{-\ell}$. Therefore
+\[
+\Pr[E_1]\le\bigl(1-2^{-\ell}\bigr)^{\lfloor\delta/\ell\rfloor}.
+\]
+
+\step{Exponential bound.} Using $1-u\le e^{-u}$ and $\lfloor\delta/\ell\rfloor\ge\delta/\ell-1$,
+\[
+\Pr[E_1]\le e^{-\lfloor\delta/\ell\rfloor/2^{\ell}}\le e^{2^{-\ell}}\,e^{-\delta/(\ell2^{\ell})}=e^{2^{-\ell}}\,e^{-\frac{\alpha}{\ell2^{\ell}}\log n}.
+\]
+Since $\log n\ge\ln n$, $e^{-c\log n}\le e^{-c\ln n}=n^{-c}$ for $c>0$, so $\Pr[E_1]=O\bigl(n^{-\alpha/(\ell2^\ell)}\bigr)$.
+
+\step{Conclusion.} Multiplying by $n-\delta+1\le n$ gives $O\bigl(n^{-(\alpha/(\ell2^\ell)-1)}\bigr)$. For $\ell=2k$ and $\alpha=k2^{2k+3}$, $\alpha/\ell=2^{2k+2}$ and $\alpha/(\ell2^{\ell})=4$, so $\Pr[\bx\text{ not dense}]=O(n^{-3})$.
+\end{IEEEproof}
+
+\begin{lemma}[One-edit code for dense strings~\cite{li22}; used as a black box]\label{lem:onecode}
+For $\bp=0^k1^k$ and $\delta=k2^{2k+3}\log n$ there are functions $h,\psi$ and a decoder $D$ such that every $(\bp,\delta)$-dense $\bx$ satisfies $D(\by,h(\bx),\psi(\bx))=\bx$ for every $\by\in\B_1(\bx)$.
+\end{lemma}
+\emph{Extracts used.} The construction of~\cite{li22} is not reproduced; we use only the following properties.
+\begin{enumerate}
+\item[(F1)] \emph{One-edit recovery:} for dense $\bx$, the triple $(\by,h(\bx),\psi(\bx))$ determines $\bx$ uniquely whenever $\by$ is at most one $k$-substring edit away from $\bx$.
+\item[(F2)] \emph{Lengths:} $|h(\bx)|\le\log n+O(1)$ and $|\psi(\bx)|=o(\log n)$.
+\item[(F3)] \emph{Cost:} $h$, $\psi$ and $D$ are computable in $O(n\,\mathrm{poly}\log n)$ time.
+\item[(F4)] \emph{Scope:} the guarantee covers dense strings and a single edit only; it is applied in Lemma~\ref{lem:restricted} to the last edit of a path.
+\end{enumerate}
+\emph{How it works.} $h$ cuts $\bx$ at every $0^k1^k$ into short parts, maps each part to an integer (from its length, its number of $1^k$ runs and a parity), and sends a Varshamov--Tenengolts checksum $\sum_i i z_i$ of that integer string together with $\sum_i z_i$ and the number of parts. One edit changes only a few consecutive part-integers, so the checksum differences reveal \emph{where} the edit is (the localisation lemma of~\cite{li22}). $\psi$ carries short checksums of blocks of $\bx$ and tells Bob \emph{what} the bits in that window were.
+
+\begin{definition}[Restricted confusion ball]
+For a dense $\bx$, the side information $h(\bx),\psi(\bx)$ is sent instead of relying on the labeling function alone, and
+\[
+\Ct(\bx)=\bigl\{\bz\in\C(\bx):\ \bz\text{ dense},\ h(\bz)=h(\bx),\ \psi(\bz)=\psi(\bx)\bigr\}.
+\]
+\end{definition}
+The paper's definition lists only density; the conditions on $h$ and $\psi$ are what Lemma~\ref{lem:restricted} needs and what the decoder checks.
+
+\begin{lemma}[Restricted ball]\label{lem:restricted}
+For every dense $\bx$,
+\[
+|\Ct_t(\bx)|\;\le\;|\B_{2t-1}(\bx)|\;=\;O(n^{2t-1}).
+\]
+\end{lemma}
+\begin{IEEEproof}
+\emph{A path.}\enspace Let $\by\in\Ct(\bx)$. Since $\by$ is confusable with $\bx$, $\by\in\B_{2t}(\bx)$ (Lemma~\ref{lem:ball}), so there is a path of single edits
+\[
+\bx=\bw_0\to\bw_1\to\dots\to\bw_{2t-1}\to\bw_{2t}=\by .
+\]
+
+\step{The last edit.} Let $\bw=\bw_{2t-1}$. Then
+\[
+\bw\in\B_{2t-1}(\bx)\quad\text{and}\quad\bw\in\B_1(\by).
+\]
+Since $\by$ is dense and $h(\by)=h(\bx)$, $\psi(\by)=\psi(\bx)$, property (F1) applied to $\by$ gives $D(\bw,h(\bx),\psi(\bx))=\by$.
+
+\step{An injective map.} For each $\by\in\Ct(\bx)$ fix one such $\bw_{\by}\in\B_{2t-1}(\bx)$, and let $\phi(\by)=\bw_{\by}$. If $\phi(\by)=\phi(\by')$, then $\by=D(\bw_{\by},h(\bx),\psi(\bx))=\by'$, so $\phi$ is injective. Hence
+\[
+|\Ct(\bx)|\le|\B_{2t-1}(\bx)|=O(n^{2t-1}),
+\]
+the last step by Lemma~\ref{lem:ball} with $2t$ replaced by $2t-1$.
+\end{IEEEproof}
+
+\begin{theorem}[Average-case scheme~\cite{narayanan}]\label{thm:2}
+The encoder
+\[
+\Enc(\bx)=
+\begin{cases}
+\bigl(1,\,h(\bx),\,\psi(\bx),\,f(\bx)\bmod a,\,a\bigr), & \bx\text{ dense},\\[2pt]
+\bigl(0,\,f(\bx)\bmod a,\,a\bigr), & \text{otherwise},
+\end{cases}
+\]
+where $a$ separates $\bx$ from $\Ct(\bx)$ in the dense case and from $\C(\bx)$ otherwise, is a valid average-case scheme with
+\begin{align*}
+\text{expected redundancy:}\quad & (4t-1)\log n+o(\log n),\\
+\text{encoding:}\quad & O(n^{2t+1}\,\mathrm{poly}\log n),\\
+\text{decoding:}\quad & O(n^{t+1}\,\mathrm{poly}\log n).
+\end{align*}
+\end{theorem}
+\begin{IEEEproof}
+\emph{Correctness.}\enspace The first bit (the partition index of Definition~3) tells Bob which encoder was used. If it is $0$, he decodes as in Theorem~\ref{thm:1}. If it is $1$, he lists $S=\B_t(\by)\cap\{0,1\}^n$ and keeps the $\bz\in S$ that are dense with $h(\bz)=h(\bx)$ and $\psi(\bz)=\psi(\bx)$. $\bx$ survives; every other survivor is confusable with $\bx$ and passes the filter, so it lies in $\Ct(\bx)$, from which $a$ separates $\bx$. Hence $\bx$ is the unique survivor with residue $r$.
+
+\step{Length of the dense tag.} By (F2), Lemma~\ref{lem:sc} applied to $\Ct(\bx)$, and Lemma~\ref{lem:restricted},
+\begin{align*}
+\mathrm{len}(\text{dense})&=|h(\bx)|+|\psi(\bx)|+2\log|\Ct(\bx)|+o(\log n)\\
+&=\log n+o(\log n)+2\log O(n^{2t-1})\\
+&=(4t-1)\log n+o(\log n).
+\end{align*}
+The non-dense tag is the Theorem~\ref{thm:1} tag, $\mathrm{len}(\text{worst})=4t\log n+o(\log n)$.
+
+\step{Averaging the cost.} With one extra bit for the flag,
+\begin{align*}
+\mathbb E\,|\Enc(\bx)|=1&+\mathrm{len}(\text{dense})\Pr[\text{dense}]\\
+&+\mathrm{len}(\text{worst})\Pr[\text{not dense}].
+\end{align*}
+By Lemma~\ref{lem:dense}, $\Pr[\text{not dense}]=O(n^{-3})$ and $\Pr[\text{dense}]\le1$, so
+\begin{align*}
+\mathbb E\,|\Enc(\bx)|&\le1+(4t-1)\log n+o(\log n)+O\!\left(\frac{4t\log n}{n^3}\right)\\
+&=(4t-1)\log n+o(\log n).
+\end{align*}
+
+\step{Encoding complexity.} Checking density takes $O(n)$; computing $h(\bx)$ and $\psi(\bx)$ takes $O(n\,\mathrm{poly}\log n)$ (F3). Building $\Ct(\bx)$ means listing the $O(n^{2t})$ strings of $\C(\bx)$ and, for each, checking density and computing $h$ and $\psi$, i.e.\ $O(n^{2t})\cdot O(n\,\mathrm{poly}\log n)$. Labelling the survivors and finding $a$ costs $O(n^{2t+1})$ as in Theorem~\ref{thm:1}. Total: $O(n^{2t+1}\,\mathrm{poly}\log n)$; the non-dense branch costs $O(n^{2t+1})$.
+
+\step{Decoding complexity.} Bob lists $O(n^t)$ suspects; for each he checks density in $O(n)$, compares $h$ and $\psi$ in $O(n\,\mathrm{poly}\log n)$, and computes one label and residue in $O(n)$. Total: $O(n^{t+1}\,\mathrm{poly}\log n)$; the non-dense branch costs $O(n^{t+1})$. In our implementation $h$ and $\psi$ take $O(n)$, so the polylogarithmic factors disappear.
+\end{IEEEproof}
+
+\textbf{How the pieces fit together.} $h$ and $\psi$ are sent so that Bob can discard every suspect that is not dense or has a different $h$ or $\psi$. Alice's modulus therefore only has to separate $\bx$ from the survivors, $\Ct(\bx)$, and Lemma~\ref{lem:restricted} shows these are a factor of $n$ fewer, because the last edit of any confusing path can be undone for free. One factor of $n$ saved in each of $r$ and $a$ is worth $2\log n$; paying $\approx\log n$ for $h$ leaves the net saving of $\log n$.
+
+%=====================================================================
+\section{Implementation}\label{sec:impl}
+\textbf{Methodology.} The implementation is a Python package (standard library only; \texttt{matplotlib} only for figures) built incrementally: each commit adds one component of the theory together with unit tests that check it against the definitions or the paper's examples, and the experiments only read the library and write results to files, from which the figures are drawn. All scheme computations are exact; randomness enters only in choosing $\bx$ and the edits (Monte Carlo).
+
+\textbf{File hierarchy.} The package \texttt{docex} mirrors the structure of Sec.~\ref{sec:theorypart}:
+\begin{itemize}
+\item \texttt{core/}: what every scheme shares, namely the edit model (Definitions~1--2, Eq.~\eqref{eq:identity}), the labeling function (Lemma~\ref{lem:label}), syndrome compression (Lemma~\ref{lem:sc}) and the reference bounds;
+\item \texttt{schemes/}: one module per scheme behind a common interface (\texttt{encode}, \texttt{decode}, tag length in bits): \texttt{worst\_case} (Theorem~\ref{thm:1}), \texttt{average\_case/} (density, $h$, $\psi$ and Theorem~\ref{thm:2}) and \texttt{li21} (the higher-complexity scheme);
+\item \texttt{io/}: conversion of text documents to bits and their division into blocks.
+\end{itemize}
+Experiments (\texttt{experiments/}), the hand-edited documents (\texttt{documents/}) and the tests (\texttt{tests/}) sit beside the package.
+
+\begin{table}[!t]
+\caption{Build sequence of the implementation (one commit per row)}\label{tab:build}
+\centering\footnotesize
+\begin{tabular}{@{}r>{\raggedright\arraybackslash}p{0.47\columnwidth}>{\raggedright\arraybackslash}p{0.33\columnwidth}@{}}
+\toprule
+\# & Component & Checked by\\
+\midrule
+1 & Project skeleton & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Low-Complexity Schemes}
+
+\subsubsection{Worst-case scheme}\label{sec:results}
+\textbf{Functions and hierarchy.} \texttt{edits} implements Definitions~1--2: \texttt{apply\_edit} (one edit), \texttt{edit\_ball} ($\B_t$, built one edit at a time), \texttt{confusion\_ball} ($\C_t$ via~\eqref{eq:identity}) and \texttt{suspects} (Bob's set $\B_t(\by)\cap\{0,1\}^n$). \texttt{labeling.label\_int} gives $f$; \texttt{syndrome.find\_modulus} finds $a_{\bx}$ (Lemma~\ref{lem:sc}); \texttt{worst\_case.encode} combines them, and \texttt{worst\_case.decode} filters Bob's suspects by residue.
+
+\textbf{Decisions that differ from the paper.} (i) The labeling function is $f(\bx)=\bx$ read as an integer ($R=n$). It is injective, so decoding is always correct; only the \emph{guarantee} of Lemma~\ref{lem:sc} on $a_{\bx}$ is lost, and we report measured lengths. The hash of~\cite{sima_del} is not given in full in~\cite{narayanan} and exceeds $n$ bits at every simulable $n$. (ii) The paper finds $a_{\bx}$ ``at no extra cost'' by raising $a$ at each collision; raising $a$ requires re-checking earlier neighbours, so \texttt{find\_modulus} re-checks every neighbour for each candidate modulus.
+
+\textbf{Inputs.} A bit string $\bx$ and parameters $(t,k)$; Bob's $\by$ is produced by \texttt{random\_edits}, which applies $t$ uniformly random $k$-substring edits (random position, $|\bu|,|\bv|\le k$, random inserted bits).
+
+\textbf{Verification strategy.} \emph{Monte Carlo:} for each $(t,k,n)$ we draw $\bx$ uniformly, encode it counting every transmitted bit, corrupt it with $t$ random edits and decode, over many $\bx$ and edit patterns; means carry 95\% confidence intervals ($\pm1.96\,s/\sqrt N$) and success rates 95\% Wilson intervals. \emph{Exhaustive enumeration:} a worst-case bound concerns every $\bx$, which sampling cannot certify, so for small $n$ we encode all $2^n$ strings ($n\le16$ for $t=k=1$). We then compare the tag length with $4t\log n$, $|\C(\bx)|$ with $n^{2t}$ (Lemma~\ref{lem:ball}), and the measured running times with the complexity exponents.
+
+\textbf{Results.} \begin{figure*}[!t]
+\centering\includegraphics[width=\textwidth]{fig01_thm1_length.png}
+\caption{Theorem~\ref{thm:1}: tag length against $n$. Monte Carlo mean $\pm$95\% CI, sampled maximum, exhaustive maximum over all $\bx$, and the leading term $4t\log n$ (dashed).}
+\label{fig:thm1len}
+\end{figure*}
+
+\begin{table}[!t]
+\caption{Theorem~\ref{thm:1}, Monte Carlo (selected rows)}\label{tab:thm1}
+\centering\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+$t,k$ & $n$ & mean tag & max & $4t\log n$ & $|\C(\bx)|$ & decoded\\
+\midrule
+1,1 & 16 & $12.1\pm0.1$ & 14 & 16.0 & 229 & 200/200\\
+1,1 & 64 & $18.3\pm0.3$ & 20 & 24.0 & 3{,}905 & 150/150\\
+1,1 & 256 & $24.8\pm0.6$ & 26 & 32.0 & 65{,}257 & 50/50\\
+1,2 & 16 & $15.5\pm0.3$ & 16 & 16.0 & 803 & 200/200\\
+1,2 & 64 & $22.4\pm0.5$ & 24 & 24.0 & 18{,}554 & 50/50\\
+2,1 & 8 & $14.4\pm0.3$ & 16 & 24.0 & 221 & 200/200\\
+2,1 & 24 & $26.0\pm0.7$ & 28 & 36.7 & 50{,}930 & 40/40\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Fig.~\ref{fig:thm1len} and Table~\ref{tab:thm1} summarise the encoding length. All 2{,}065 decoding trials succeeded (95\% Wilson lower bound $\ge 0.91$ in the smallest setting). For $k=1$ the exhaustive worst case is $12,12,12,14,14$ bits at $n=8,\dots,16$, against $4t\log n=12,13.3,14.3,15.2,16$; the bound is tight at $n=8$. For $k=2$ the worst string \emph{exceeds} the leading term at small $n$ ($14,14,16$ against $12,13.3,14.3$ for $n=8,10,12$). This is permitted by the $o(\log n)$ term: the constant $k^{2t}3^{2kt}=36$ of~\eqref{eq:ballbound} adds about five bits to $\log|\C|$ at $k=2$, and the excess vanishes by $n=64$. Each doubling of $n$ adds $3.2$ bits for $t=1$ (bound: 4) and $7.5$ for $t=2$ (bound: 8). The tag sits below the bound because $a_{\bx}\ll|\C(\bx)|$ (at $n=256$, $a_{\bx}\approx4{,}000$ against $|\C|\approx65{,}000$).
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig02_thm1_ball.png}
+\caption{Lemma~\ref{lem:ball}: mean $|\C(\bx)|$ against $n$ (log--log) with fitted slopes; dotted lines have slope $2t$.}
+\label{fig:ball}
+\end{figure}
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig03_thm1_time.png}
+\caption{Measured encoding and decoding time per string (log--log) with fitted slopes against the complexity exponents $2t+1$ and $t+1$.}
+\label{fig:time}
+\end{figure}
+
+Lemma~\ref{lem:ball} is confirmed (Fig.~\ref{fig:ball}): fitted slopes of $\log|\C|$ against $\log n$ are $2.04$, $2.25$ and $4.97$ for $(t,k)=(1,1),(1,2),(2,1)$, against $2t=2,2,4$. The explicit bound~\eqref{eq:ballbound} is about $2{,}300\times$ the measured ball at $n=256$. Timing slopes (Fig.~\ref{fig:time}) are $2.58, 2.60, 4.76$ for encoding (theory $\le3,3,5$) and $1.09, 1.00, 1.97$ for decoding (theory $\le2,2,3$); decoding is about $2{,}000\times$ faster than encoding at $n=256$.
+
+
+\subsubsection{Average-case scheme}
+\textbf{Functions and hierarchy.} \texttt{density} implements Definition~5 and the bound of Lemma~\ref{lem:dense}; \texttt{hash\_h} computes the part integers, $h(\bx)$ and Bob's localisation; \texttt{psi} computes $\psi(\bx)$ and the one-edit decoder of Lemma~\ref{lem:onecode}; \texttt{average\_case.restricted\_ball} builds $\Ct(\bx)$; \texttt{average\_case.encode/decode} implement Theorem~\ref{thm:2}, reusing \texttt{find\_modulus} and \texttt{suspects} from the worst-case modules.
+
+\textbf{Decisions that differ from the paper.} (i) The same labeling function $f(\bx)=\bx$. (ii) $\psi(\bx)=(A_{\bx},S_0,S_1)$, where $A_{\bx}$ is the largest part-integer ($O(\log\log n)$ bits; it lets Bob bound symbols for localisation) and $S_c$ sums the residues of the even/odd $L$-bit blocks modulo a fixed prime with $\lceil\log L\rceil+12$ bits; one-edit recovery then holds with high probability rather than always, while Theorem~\ref{thm:2} decoding stays always correct because $\psi$ is used only as a filter. (iii) $L=8192$ ($k=1$) or $16384$ ($k=2$), chosen from measured localisation windows. (iv) The restricted ball includes ``same $h,\psi$'', as Lemma~\ref{lem:restricted} requires. (v) The paper's $\delta$ exceeds $n$ for $n<256$ ($k=1$), so at encodable sizes every string is dense; unit tests use a small $\delta$ to exercise both branches.
+
+\textbf{Inputs.} As for the worst case, plus $\delta$ (default: the paper's value, capped at $n$) and the block length $L$.
+
+\textbf{Verification strategy.} A bound ``leading term $+\,o(\log n)$'' cannot be checked at one $n$. We therefore test (a) the slope of the average tag length against $\log n$ ($\le 4t-1$); (b) that (length $-$ leading term)$/\log n$ decreases; and (c) each ingredient against its own lemma: density (Lemma~\ref{lem:dense}), one-edit recovery (Lemma~\ref{lem:onecode}) and the size of $\Ct(\bx)$ (Lemma~\ref{lem:restricted}).
+
+\textbf{Results.} \begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig04_lemma4_density.png}
+\caption{Lemma~\ref{lem:dense}: measured $\Pr[\text{not dense}]$ ($\pm$Wilson 95\% CI, 2{,}000 strings per point) and the union bound.}
+\label{fig:dense}
+\end{figure}
+
+\textbf{Lemma~\ref{lem:dense}} (Fig.~\ref{fig:dense}). The non-dense fraction falls quickly with $\delta$: from 72\% at $\delta=10$ to 0.05\% at $\delta=24$ ($k=1$, $n=256$). In this range the union bound is capped at 1; at the paper's $\delta$ it is $7\cdot10^{-18}$ for $n=1024$, far below the claimed $O(n^{-3})\approx9\cdot10^{-10}$. The bound is valid but very loose.
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig05_lemma5_one_edit.png}
+\caption{Lemma~\ref{lem:onecode}: recovery of $\bx$ from $(\by,h(\bx),\psi(\bx))$ after one edit, and the localisation window as a share of $n$.}
+\label{fig:l5}
+\end{figure}
+
+\textbf{Lemma~\ref{lem:onecode}} (Fig.~\ref{fig:l5}). For $k=1$, $\bx$ was recovered in 60/60, 60/60, 50/60 and 23/25 trials at $n=2^{12},2^{14},2^{16},2^{18}$; $h$ localises the edit to 2--4\,kbit regardless of $n$ (2\% of $\bx$ at $2^{18}$). For $k=2$ recovery is 14/60 and 12/25 at $2^{16}$ and $2^{18}$, because the window is still large. Every failure was a window spanning more than two $\psi$-blocks; there was never a wrong output.
+
+\begin{figure*}[!t]
+\centering\includegraphics[width=0.92\textwidth]{fig06_thm2_length.png}
+\caption{Theorem~\ref{thm:2}: average tag length $\bar s$ against $\log n$ with fitted slopes (dotted: slope $4t-1$), and the remainder $[\bar s-(4t-1)\log n]/\log n$.}
+\label{fig:thm2}
+\end{figure*}
+
+\begin{table}[!t]
+\caption{Theorem~\ref{thm:2}: verification checks}\label{tab:checks}
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Check & $t{=}1,k{=}1$ & $t{=}2,k{=}1$ & $t{=}1,k{=}2$\\
+\midrule
+C1 every tag decodes & pass & pass & pass\\
+C2 $(r,a)\le(4t-2)\log n$ & pass (3 b) & pass & pass\\
+C3 $|h|-\log n$ constant & pass (31) & pass & pass (36)\\
+C4 slope $\le 4t-1$ & $2.30\le3$ & $2.63\le7$ & $2.30\le3$\\
+C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Theorem~\ref{thm:2}} (Fig.~\ref{fig:thm2}, Table~\ref{tab:checks}). All 1{,}630 decodes succeeded. The leading slope is within the bound and the remainder shrinks relative to $\log n$, which is exactly what $(4t-1)\log n+o(\log n)$ asserts. The remainder is large in absolute terms, however: at $n=256$ the average tag is 82 bits, against 25 for Theorem~\ref{thm:1} on the same strings.
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig07_thm2_ball.png}
+\caption{Lemma~\ref{lem:restricted}: $|\C|$, $|\Ct_h|$ (dense, same $h$) and $|\Ct|$ (also same $\psi$) for $t=k=1$, with the $n^{2t-1}$ bound.}
+\label{fig:restricted}
+\end{figure}
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig08_thm2_breakdown.png}
+\caption{Composition of the average-case tag against the Theorem~\ref{thm:1} tag ($t=k=1$).}
+\label{fig:bits}
+\end{figure}
+
+\textbf{Lemma~\ref{lem:restricted} and the bit budget} (Figs.~\ref{fig:restricted},~\ref{fig:bits}). ``Dense and same $h$'' leaves 1--12 of 225--64{,}083 confusable strings ($n=16$--$256$), far below $n^{2t-1}=n$; adding ``same $\psi$'' leaves only $\bx$, so $a=2$ and $(r,a)$ costs 3 bits. At $n=256$ the tag is $1+39\,(h)+39\,(\psi)+3=82$ bits: the saving in $(r,a)$ is paid for by fixed side information.
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig09_thm2_break_even.png}
+\caption{Expected length against $\log n$ from the measured component sizes ($t=k=1$).}
+\label{fig:breakeven}
+\end{figure}
+
+\textbf{Break-even} (Fig.~\ref{fig:breakeven}). Using the leading terms of Lemmas~\ref{lem:sc},~\ref{lem:ball},~\ref{lem:restricted}, the exact $|h|$ and $|\psi|$ of our implementation and Lemma~\ref{lem:dense} for the non-dense branch, the dense tag is $\approx(4t-2)\log n+(\log n+31)+71+1$, which beats $4t\log n$ only when $\log n\gtrsim103$: the break-even is $n\approx2^{108}$ bits.
+
+
+\subsection{Higher-Complexity Scheme of~\cite{li21}}\label{sec:li21}
+\textcolor{red!70!black}{\textbf{[To be completed.]} Implementation of the distributed graph colouring scheme of~\cite{li21} (redundancy $4t\log n+O(\log\log n)$, encoding $O(n^{8t})$, decoding $O(n^{10t})$), written with AI assistance since it is a comparison point rather than the focus of the project. As asked in the project brief, this is the only higher-complexity scheme in the comparison.}
+
+\subsection{Two Hand-Edited Documents}\label{sec:docs}
+\textcolor{red!70!black}{\textbf{[To be completed.]} Results of the worst-case, average-case and higher-complexity schemes on two documents edited by hand: tag length, encoding and decoding time, and decoding success for each scheme.}
+
+\subsection{Comparison of Redundancy and Complexity}\label{sec:compare}
+The scheme of~\cite{li21} attains $4t\log n+O(\log\log n)$ in $O(n^{8t})$/$O(n^{10t})$ time, i.e.\ $2^{48}$ operations per string already at $t=1$, $n=64$; it enters through its published leading term. To obtain a \emph{measured} high-complexity benchmark on the same data we use Proposition~\ref{prop:colour}: (i) a greedy colouring of the whole confusion graph is a valid scheme with redundancy $\lceil\log\chi\rceil$ at exponential cost (decoding verified on 50 random edits per setting), and (ii) every set $\B_t(\by)\cap\{0,1\}^n$ is a clique, so $\lceil\log\max_{\by}|\B_t(\by)\cap\{0,1\}^n|\rceil$ lower-bounds \emph{every} scheme.
+
+\begin{table}[!t]
+\caption{Redundancy in bits, exact over all $\bx\in\{0,1\}^n$}\label{tab:compare}
+\centering\footnotesize
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+$t,k$ & $n$ & lower & colour & Thm~1 & Thm~2 & $4t\log n$ & \cite{li21}\\
+ & & bound & & max/mean & mean & & lead.\\
+\midrule
+1,1 & 8 & 4 & 5 & 12/9.7 & 70 & 12.0 & 13.6\\
+1,1 & 12 & 4 & 6 & 12/11.3 & 72 & 14.3 & 16.2\\
+1,1 & 16 & 5 & 7 & 14/12.2 & 73 & 16.0 & 18.0\\
+1,2 & 8 & 4 & 6 & 14/11.7 & 80 & 12.0 & 13.6\\
+1,2 & 12 & 5 & 7 & 16/13.9 & 82 & 14.3 & 16.2\\
+2,1 & 6 & 6 & 6 & 12/11.8 & 69 & 20.7 & 22.0\\
+2,1 & 8 & 7 & 7 & 16/14.3 & 70 & 24.0 & 25.6\\
+2,1 & 10 & 7 & 9 & 18/16.7 & 72 & 26.6 & 28.3\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[!t]
+\centering\includegraphics[width=\textwidth]{fig10_compare_redundancy.png}
+\caption{Redundancy of all schemes on the same synthetic setting. The grey region is below the clique lower bound; \cite{li21} is drawn as $4t\log n+\log\log n$ (its constant is unspecified).}
+\label{fig:compare}
+\end{figure*}
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig11_compare_cost.png}
+\caption{Left: measured cost for $t=k=1$. Right: theoretical redundancy against encoding cost at $n=1024$, $t=1$.}
+\label{fig:cost}
+\end{figure}
+
+Table~\ref{tab:compare} and Fig.~\ref{fig:compare} show that exhaustive colouring needs $\approx\log(\Delta+1)\approx 2t\log n$ bits and meets the lower bound exactly for $t=2$, $n\le8$. Theorem~\ref{thm:1} uses $\approx4t\log n$, i.e.\ 2--2.5 times the colouring (whose redundancy is achievable but not proven optimal: the optimum lies between the lower bound and the colouring), because Alice must send the modulus $a_{\bx}$ as well as the residue; \cite{li21} has the same leading term. What the low-complexity scheme buys is cost (Fig.~\ref{fig:cost}): the colouring must visit all $2^n$ strings (about 40\,s at $n=16$, roughly doubling with each extra bit), whereas Theorem~\ref{thm:1} needs 0.4\,ms for the one string being sent. At $n=1024$, $t=1$ the trade-off is $\approx20$ bits for $\sim10^{308}$ operations (colouring), $\approx43$ bits for $\sim10^{24}$~\cite{li21}, and $\approx40$ bits for $\sim10^{9}$ (Theorem~\ref{thm:1}).
+
+%=====================================================================
+\section{Extension: Real Version-Control Data}\label{sec:ext}
+\textcolor{red!70!black}{\textbf{[To be completed.]} The extension will be rerun on commits we make ourselves to a GitHub repository. The analysis below uses 480 commits from four public repositories.}
+
+{\sloppy\textbf{Data and method.} We shallow-cloned four public GitHub repositories (flask, gitignore, the Rust book and the-art-of-command-line\footnote{\texttt{pallets/flask}, \texttt{github/gitignore}, \texttt{rust-lang/book}, \texttt{jlevy/the-art-of-command-line}.}) and, for 120 non-merge commits each, saved one modified text file before and after: 480 pairs, median 5.9\,KiB. A line-level then byte-level diff gives the changed regions in bit positions; $t_{\min}(k)$, the fewest $k$-substring edits transforming old into new, is computed by dynamic programming over groups of neighbouring changes. Pairs that do not fit are recorded as model violations, not decoder failures.\par}
+
+\begin{table}[!t]
+\caption{Fraction of real commits fitting $t$ edits of $\le k$ bits}\label{tab:fit}
+\centering\footnotesize
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+$k$ (bits) & $t\le1$ & $t\le2$ & $t\le3$ & $t\le5$\\
+\midrule
+2 & 1\% & 1\% & 1\% & 9\%\\
+8 & 6\% & 10\% & 11\% & 18\%\\
+64 & 17\% & 27\% & 33\% & 45\%\\
+512 & 41\% & 60\% & 68\% & 75\%\\
+4096 & 67\% & 82\% & 86\% & 90\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig12_real_fit.png}
+\caption{Share of real commits that fit the $(t,k)$ model, against $k$.}
+\label{fig:fit}
+\end{figure}
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig13_real_hunks.png}
+\caption{Number of changed regions per commit and size of the largest change.}
+\label{fig:hunks}
+\end{figure}
+
+\begin{figure}[!t]
+\centering\includegraphics[width=\columnwidth]{fig14_real_tag.png}
+\caption{Estimated tag length ($2\log$ of bound~\eqref{eq:ballbound}) for commits fitting $t\le3$, against file size; dashed: sending the file.}
+\label{fig:realtag}
+\end{figure}
+
+\textbf{Findings} (Table~\ref{tab:fit}, Figs.~\ref{fig:fit}--\ref{fig:realtag}). (1) Real edits are few but long: a median commit changes 2 regions and 351 bits, and only 1\% of commits fit $k=2$, $t\le3$; most fit only for $k$ in the tens to hundreds of bytes. (2) At such $k$ the constant of~\eqref{eq:ballbound} dominates: the estimated tag has median 127, 541 and 3{,}391 bits for $k=2,64,512$, against $4t\log n\approx73$--$89$; for small files with $k=512$ it can exceed the file itself. (3) All 480 files are dense for $k=1,2$ at the paper's $\delta$ (median longest gap 11 bits against $\delta\approx498$), so real text satisfies the average-case precondition despite non-uniform statistics. (4) On 40 real isolated 1--2-bit edits cut as 64-bit windows ($t=1$, $k=2$), all 40 decoded, with mean $|\C|=18{,}488$ and mean tag $22.0\pm0.2$ bits, matching random windows ($18{,}429$; $22.2\pm0.2$). The model's \emph{form}, a few localised edits, matches real commits; its small-$k$ assumption does not.
+
+%=====================================================================
+\FloatBarrier
+\section{Limitations and Observations on the Reference}\label{sec:limits}
+\textbf{Limitations.} The labeling function and the block hash in $\psi$ are stand-ins (Sec.~\ref{sec:impl}); the scheme of~\cite{li21} is compared only through its published bound; brute-force enumeration limits encoding to $n\le256$ ($t=1$) and $n\le24$ ($t=2$); the paper's $\delta$ exceeds $n$ at encodable sizes; the real-data tag is an estimate, and the real windows are selected small edits. Multi-round protocols and non-uniform source models were not attempted.
+
+\textbf{Observations on~\cite{narayanan}.} (i) The ``no extra cost'' search for $a_{\bx}$ needs re-checking of earlier neighbours. (ii) Theorem~2 refers to ``$a_{\bx}$ as in Lemma~2''; Lemma~1 is meant. (iii) The average redundancy should be normalised by $2^n$, not $n$. (iv) The restricted confusion ball needs ``same $h,\psi$'' for Lemma~\ref{lem:restricted}. (v) Lemma~\ref{lem:dense}'s bound is valid but loose by many orders of magnitude.
+
+%=====================================================================
+\section{Conclusion}
+Both schemes of~\cite{narayanan} work as claimed: every tag decoded, the confusion ball grows as $n^{2t}$, the complexities hold, and both redundancy bounds are verified in the form they are stated. The experiments also show what the asymptotic statements hide. $4t\log n$ is a leading term that small-$n$, $k=2$ cases exceed; the average-case scheme saves $\log n$ only after paying about 70 bits of side information, so it overtakes the worst-case scheme near $n\approx2^{108}$; and the low-complexity scheme pays 2--2.5 times the redundancy of an exhaustive colouring in return for polynomial running time. On real repositories the substring-edit model fits in form but not in scale, since real edits have large $k$.
+
+%=====================================================================
+\appendix[Reproducing the Results]
+{\raggedright
+\begin{itemize}
+\item \texttt{python3 run\_all.py}: unit tests and all experiments (about 15\,min; add \texttt{--quick} for a one-minute check).
+\item \texttt{python3 experiments/e4\_extension\_real\_data.py collect}: downloads the real data once (needs git and internet).
+\item \texttt{python3 experiments/figures.py}: draws every figure (needs matplotlib).
+\end{itemize}
+Seeds are fixed, so reruns reproduce the reported numbers.\par}
+
+\begin{thebibliography}{9}
+\bibitem{narayanan} H.~Narayanan, V.~Ramkumar, R.~Bitar, and A.~Wachter-Zeh, ``Coding schemes for document exchange under multiple substring edits,'' arXiv:2601.18441, 2026.
+\bibitem{orlitsky} A.~Orlitsky, ``Interactive communication: Balanced distributions, correlated files, and average-case complexity,'' in \emph{Proc. IEEE FOCS}, 1991, pp.~228--238.
+\bibitem{cormode} G.~Cormode, M.~Paterson, S.~C.~Sahinalp, and U.~Vishkin, ``Communication complexity of document exchange,'' in \emph{Proc. ACM-SIAM SODA}, 2000, pp.~197--206.
+\bibitem{sima_del} J.~Sima, R.~Gabrys, and J.~Bruck, ``Optimal systematic $t$-deletion correcting codes,'' in \emph{Proc. IEEE ISIT}, 2020, pp.~769--774.
+\bibitem{sima_sc} J.~Sima, R.~Gabrys, and J.~Bruck, ``Syndrome compression for optimal redundancy codes,'' in \emph{Proc. IEEE ISIT}, 2020, pp.~751--756.
+\bibitem{tang} Y.~Tang, S.~Motamen, H.~Lou, K.~Whritenour, S.~Wang, R.~Gabrys, and F.~Farnoud, ``Correcting a substring edit error of bounded length,'' \emph{IEEE Trans. Commun.}, vol.~73, no.~1, pp.~12--21, 2025.
+\bibitem{li21} Y.~Li, R.~Gabrys, and F.~Farnoud, ``Constructing low-redundancy codes via distributed graph coloring,'' arXiv:2512.04197, 2025.
+\bibitem{li22} Y.~Li, Y.~Tang, H.~Lou, R.~Gabrys, and F.~Farnoud, ``Optimal codes correcting a substring edit,'' \emph{IEEE Trans. Inf. Theory}, vol.~71, no.~7, pp.~5178--5191, 2025.
+\end{thebibliography}
+
+\end{document}
