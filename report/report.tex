@@ -445,23 +445,11 @@ $t,k$ & $n$ & mean tag & max & $4t\log n$ & $|\C(\bx)|$ & decoded\\
 \end{tabular}
 \end{table}
 
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig02_thm1_ball.png}
-\caption{Lemma~\ref{lem:ball}: mean $|\C(\bx)|$ against $n$ (log--log) with fitted slopes; dotted lines have slope $2t$.}
-\label{fig:ball}
-\end{figure}
-
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig03_thm1_time.png}
-\caption{Measured encoding and decoding time per string (log--log) with fitted slopes against the complexity exponents $2t+1$ and $t+1$.}
-\label{fig:time}
-\end{figure}
-
 \begin{itemize}
 \item All 2{,}065 decoding trials succeeded (Table~\ref{tab:thm1}).
 \item Tag length (Fig.~\ref{fig:thm1len}): for $k=1$ the exhaustive worst case is $12,12,12,14,14$ bits at $n=8,\dots,16$, against $4t\log n=12,\dots,16$. For $k=2$ the worst string exceeds the leading term at small $n$ ($14,14,16$ against $12,13.3,14.3$ at $n=8,10,12$). Each doubling of $n$ adds $3.2$ bits for $t=1$ (bound: $4$) and $7.5$ bits for $t=2$ (bound: $8$).
-\item Confusion ball (Fig.~\ref{fig:ball}): fitted slopes $2.04$, $2.25$, $4.97$ for $(t,k)=(1,1),(1,2),(2,1)$, against $2t=2,2,4$.
-\item Time (Fig.~\ref{fig:time}): encoding slopes $2.46,2.69,4.58$ (theory $\le3,3,5$); decoding slopes $0.97,1.13,1.89$ (theory $\le2,2,3$).
+\item Confusion ball: fitted slopes $2.04$, $2.25$, $4.97$ for $(t,k)=(1,1),(1,2),(2,1)$, against $2t=2,2,4$.
+\item Time: encoding slopes $2.46,2.69,4.58$ (theory $\le3,3,5$); decoding slopes $0.97,1.13,1.89$ (theory $\le2,2,3$).
 \end{itemize}
 
 \textbf{Interpretation.} Theorem~\ref{thm:1} holds in the form it is stated. The tag is usually below $4t\log n$ because the modulus found is much smaller than the ball ($a_{\bx}\approx4{,}000$ against $|\C|\approx65{,}000$ at $n=256$). The excess for $k=2$ at small $n$ is allowed by the $o(\log n)$ term: the constant $k^{2t}3^{2kt}=36$ in~\eqref{eq:ballbound} adds about five bits, and the excess is gone by $n=64$.
@@ -503,18 +491,6 @@ def decode(y, (1, hx, px, r, a), n):
 \textbf{Verification strategy.} A bound of the form ``leading term $+\,o(\log n)$'' cannot be checked at a single $n$. We therefore check (a) that the slope of the average tag length against $\log n$ is at most $4t-1$; (b) that the remainder (length $-$ leading term)$/\log n$ decreases with $n$; and (c) each ingredient against its own lemma: density (Lemma~\ref{lem:dense}), one-edit recovery (Lemma~\ref{lem:onecode}) and the size of $\Ct(\bx)$ (Lemma~\ref{lem:restricted}). Script: \path{experiments/verify_average_case.py}.
 
 \textbf{Results.}
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig04_lemma4_density.png}
-\caption{Lemma~\ref{lem:dense}: measured $\Pr[\text{not dense}]$ ($\pm$Wilson 95\% CI, 2{,}000 strings per point) and the union bound.}
-\label{fig:dense}
-\end{figure}
-
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig05_lemma5_one_edit.png}
-\caption{Lemma~\ref{lem:onecode}: recovery of $\bx$ from $(\by,h(\bx),\psi(\bx))$ after one edit, and the localisation window as a share of $n$.}
-\label{fig:l5}
-\end{figure}
-
 \begin{figure*}[!t]
 \centering\includegraphics[width=0.92\textwidth]{fig06_thm2_length.png}
 \caption{Theorem~\ref{thm:2}: average tag length $\bar s$ against $\log n$ with fitted slopes (dotted: slope $4t-1$), and the remainder $[\bar s-(4t-1)\log n]/\log n$.}
@@ -538,30 +514,12 @@ C5 remainder$/\log n$ falls & $15.2\to7.2$ & $16.3\to9.1$ & $17.8\to9.9$\\
 \end{tabular}
 \end{table}
 
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig07_thm2_ball.png}
-\caption{Lemma~\ref{lem:restricted}: $|\C|$, $|\Ct_h|$ (dense, same $h$) and $|\Ct|$ (also same $\psi$) for $t=k=1$, with the $n^{2t-1}$ bound.}
-\label{fig:restricted}
-\end{figure}
-
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig08_thm2_breakdown.png}
-\caption{Composition of the average-case tag against the Theorem~\ref{thm:1} tag ($t=k=1$).}
-\label{fig:bits}
-\end{figure}
-
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig09_thm2_break_even.png}
-\caption{Expected length against $\log n$ from the measured component sizes ($t=k=1$).}
-\label{fig:breakeven}
-\end{figure}
-
 \begin{itemize}
-\item \emph{Density} (Fig.~\ref{fig:dense}): the non-dense fraction falls from 72\% at $\delta=10$ to 0.05\% at $\delta=24$ ($k=1$, $n=256$). At the paper's $\delta$ the union bound is $7\cdot10^{-18}$ for $n=1024$, far below the claimed $O(n^{-3})$.
-\item \emph{One-edit recovery} (Fig.~\ref{fig:l5}): for $k=1$, $\bx$ was recovered in 60/60, 60/60, 50/60 and 23/25 trials at $n=2^{12},2^{14},2^{16},2^{18}$, with no wrong output; every failure was a localisation window spanning more than two $\psi$-blocks.
+\item \emph{Density}: the non-dense fraction falls from 72\% at $\delta=10$ to 0.05\% at $\delta=24$ ($k=1$, $n=256$). At the paper's $\delta$ the union bound is $7\cdot10^{-18}$ for $n=1024$, far below the claimed $O(n^{-3})$.
+\item \emph{One-edit recovery}: for $k=1$, $\bx$ was recovered in 60/60, 60/60, 50/60 and 23/25 trials at $n=2^{12},2^{14},2^{16},2^{18}$, with no wrong output; every failure was a localisation window spanning more than two $\psi$-blocks.
 \item \emph{Theorem~\ref{thm:2}} (Fig.~\ref{fig:thm2}, Table~\ref{tab:checks}): all 1{,}630 decodes succeeded; the slopes are within $4t-1$ and the remainder falls relative to $\log n$.
-\item \emph{Restricted ball} (Fig.~\ref{fig:restricted}): ``dense and same $h$'' leaves 1--12 of 225--64{,}083 confusable strings ($n=16$--$256$), below $n^{2t-1}$; adding ``same $\psi$'' leaves only $\bx$, so $(r,a)$ costs 3 bits.
-\item \emph{Bit budget} (Figs.~\ref{fig:bits},~\ref{fig:breakeven}): at $n=256$ the tag is $1+39\,(h)+39\,(\psi)+3=82$ bits, against 25 bits for Theorem~\ref{thm:1}. From the measured part sizes, the average-case scheme becomes shorter only near $n\approx2^{108}$.
+\item \emph{Restricted ball}: ``dense and same $h$'' leaves 1--12 of 225--64{,}083 confusable strings ($n=16$--$256$), below $n^{2t-1}$; adding ``same $\psi$'' leaves only $\bx$, so $(r,a)$ costs 3 bits.
+\item \emph{Bit budget}: at $n=256$ the tag is $1+39\,(h)+39\,(\psi)+3=82$ bits, against 25 bits for Theorem~\ref{thm:1}. From the measured part sizes, the average-case scheme becomes shorter only near $n\approx2^{108}$.
 \end{itemize}
 
 \textbf{Interpretation.} Theorem~\ref{thm:2} holds as stated: the leading term is $(4t-1)\log n$ and the rest grows more slowly than $\log n$. The saving of one $\log n$ is, however, paid for by about 70 bits of side information ($h$ and $\psi$), so at every size we can run it is longer than the worst-case scheme. Lemma~\ref{lem:dense} is correct but loose by many orders of magnitude.
@@ -702,25 +660,13 @@ $k$ (bits) & $t\le1$ & $t\le2$ & $t\le3$ & $t\le5$\\
 \label{fig:fit}
 \end{figure}
 
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig13_real_hunks.png}
-\caption{Number of changed regions per file change, and size of the largest one.}
-\label{fig:hunks}
-\end{figure}
-
-\begin{figure}[!t]
-\centering\includegraphics[width=\columnwidth]{fig14_real_tag.png}
-\caption{Estimated tag ($2\log$ of bound~\eqref{eq:ballbound}) for changes fitting $t\le3$, against file size; dashed: sending the whole file.}
-\label{fig:realtag}
-\end{figure}
-
-\textbf{Findings} (Table~\ref{tab:fit}, Figs.~\ref{fig:fit}--\ref{fig:realtag}).
+\textbf{Findings} (Table~\ref{tab:fit}, Fig.~\ref{fig:fit}).
 
 (1) \emph{Edits are few but long.} A median change touches 4 regions but 3{,}231 bits, and its largest region is 1{,}768 bits. No change fits $k\le4$ for any $t\le5$, and at most 3\% fit $k\le32$; a median change needs $t_{\min}=398$ edits at $k=8$ and $52$ at $k=64$. Even with $k=512$ bits only 16\% fit $t\le3$. The small constant $k$ of the paper is the assumption real data breaks.
 
 (2) \emph{Lines are added, not just edited.} 100 of the 101 changes add or remove whole lines (97 add), so the one-block-per-line layout of Sec.~\ref{sec:docs}, which needs the number of lines to stay fixed, also breaks. Of the 375 lines that are changed in place, 43 (11\%) are one edit of $\le8$ bits and 103 (27\%) one edit of $\le64$ bits.
 
-(3) \emph{At the $k$ real edits need, the constant dominates.} For changes fitting $t\le3$, the estimated tag has median 966 bits at $k=64$ (against $4t\log n\approx84$) and 6{,}738 bits at $k=512$ (against 139), because of the $3^{2kt}$ factor in~\eqref{eq:ballbound}. On small files it exceeds the file itself (Fig.~\ref{fig:realtag}).
+(3) \emph{At the $k$ real edits need, the constant dominates.} For changes fitting $t\le3$, the estimated tag has median 966 bits at $k=64$ (against $4t\log n\approx84$) and 6{,}738 bits at $k=512$ (against 139), because of the $3^{2kt}$ factor in~\eqref{eq:ballbound}. On small files it exceeds the file itself.
 
 (4) \emph{Density holds.} All 101 old files are dense for $k=1$ and $k=2$ at the paper's $\delta$: the longest gap between $0^k1^k$ patterns is at most 11 bits for $k=1$ (median 10), against $\delta\approx500$. Real text, though far from uniform, meets the precondition of Theorem~\ref{thm:2}.
 
@@ -760,7 +706,7 @@ Seeds are fixed, so reruns reproduce the reported numbers.\par}
 2 & Edit model: $\B_t$, $\C_t$ via~\eqref{eq:identity}, Bob's suspects, channel (\path{core/edits.py}) & Example~1; Eq.~\eqref{eq:identity} vs.\ Def.~2 for all $n\le6$\\
 3 & Labeling $f(\bx)=\bx$ and syndrome compression (\path{core/labeling.py}, \path{core/syndrome.py}) & Toy example $a=7$; smallest valid $a$; $a\le2MR\ln(MR)$\\
 4 & Common scheme interface; worst-case scheme (\path{schemes/base.py}, \path{schemes/worst_case.py}) & Example $\bx=10110\to(9,13)$; all $\bx\in\{0,1\}^8$, all $\by\in\B_1(\bx)$\\
-5 & Verification of Theorem~\ref{thm:1}: Monte Carlo and exhaustive runs, figures (\path{experiments/verify_worst_case.py}) & 2{,}065/2{,}065 decoded; slopes in Figs.~\ref{fig:thm1len}--\ref{fig:time}\\
+5 & Verification of Theorem~\ref{thm:1}: Monte Carlo and exhaustive runs, figures (\path{experiments/verify_worst_case.py}) & 2{,}065/2{,}065 decoded; Fig.~\ref{fig:thm1len}\\
 6 & Density: partition at $0^k1^k$, both density forms, Lemma~\ref{lem:dense} bound (\path{schemes/average_case/density.py}) & Example of~\cite{li22}; brute force; bound $<n^{-3}$\\
 7 & Hash $h$ and localisation (\path{schemes/average_case/hash_h.py}) & Edit always inside the located window\\
 8 & Side information $\psi$ and the one-edit decoder (\path{schemes/average_case/psi.py}) & One edit recovered at $n=2^{13}$; never a wrong output\\
